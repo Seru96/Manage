@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toLocalIso } from '../app/reminders';
-import { newId, PALETTE } from '../core/model';
+import { isGeneral, newId, PALETTE } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
 import { usePeople, useSubdivisions } from '../store/selectors';
@@ -27,7 +27,8 @@ export function Sidebar() {
   const dueCount = Object.values(reminders).filter((r) => !r.done && r.at <= nowIso).length;
   const [adding, setAdding] = useState<'sub' | 'person' | null>(null);
 
-  const countOf = (subId: string) => Object.values(tasks).filter((t) => t.subdivisionId === subId && t.status !== 'hecha').length;
+  const open = Object.values(tasks).filter((t) => t.status !== 'hecha');
+  const countOf = (subId: string, general: boolean) => (general ? open.length : open.filter((t) => t.subdivisionId === subId).length);
 
   const add = (kind: 'sub' | 'person', name: string) => {
     const n = name.trim();
@@ -55,7 +56,7 @@ export function Sidebar() {
         </div>
         <ul className="side-list">
           {subs.map((s) => (
-            <EditableItem key={s.id} label={s.name} color={s.color} count={countOf(s.id)} on={filters.subdivisionId === s.id}
+            <EditableItem key={s.id} label={s.name} color={s.color} count={countOf(s.id, isGeneral(s))} child={!isGeneral(s) && subs.some(isGeneral)} on={filters.subdivisionId === s.id}
               onClick={() => setFilters({ subdivisionId: filters.subdivisionId === s.id ? null : s.id })}
               onRename={(name) => patch('subdivision', s.id, { name })}
               onDelete={async () => {
@@ -101,8 +102,8 @@ function NewItem({ placeholder, onDone }: { placeholder: string; onDone: (name: 
   );
 }
 
-function EditableItem({ label, color, count, round, on, onClick, onRename, onDelete }: {
-  label: string; color: string; count?: number; round?: boolean; on: boolean;
+function EditableItem({ label, color, count, round, child, on, onClick, onRename, onDelete }: {
+  label: string; color: string; count?: number; round?: boolean; child?: boolean; on: boolean;
   onClick: () => void; onRename: (name: string) => void; onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -116,7 +117,7 @@ function EditableItem({ label, color, count, round, on, onClick, onRename, onDel
     );
   }
   return (
-    <li className={`side-row${on ? ' on' : ''}`} onClick={onClick} onDoubleClick={() => setEditing(true)} title="Clic para filtrar · doble clic para renombrar">
+    <li className={`side-row${on ? ' on' : ''}${child ? ' child' : ''}`} onClick={onClick} onDoubleClick={() => setEditing(true)} title="Clic para filtrar · doble clic para renombrar">
       <span className={`swatch${round ? ' round' : ''}`} style={{ background: color }} />
       <span className="name">{label}</span>
       {count !== undefined && <span className="count">{count || ''}</span>}

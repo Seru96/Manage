@@ -6,15 +6,15 @@ import { toast, useView } from '../store/view';
 const stem = (path: string) => path.replace(/^.*[\\/]/, '').replace(/\.manage$/i, '');
 
 /** Nuevo proyecto: se elige dónde guardarlo (idealmente, la carpeta de Teams sincronizada). */
-export async function createProject(): Promise<boolean> {
-  const path = await backend.pickSavePath('Proyecto nuevo');
+export async function createProject(opts: { suggestedName?: string; empty?: boolean } = {}): Promise<boolean> {
+  const path = await backend.pickSavePath(opts.suggestedName ?? 'Proyecto nuevo');
   if (!path) return false;
   await closeProject(false);
   const name = stem(path);
   const snap = await backend.create(path, newId(), name);
   loadProject(path, snap, await backend.whoami());
   // Una subdivisión para empezar, para que la vista de tareas no esté vacía.
-  upsert('subdivision', { id: newId(), name: 'General', color: PALETTE[0]!, order: 0 });
+  if (!opts.empty) upsert('subdivision', { id: newId(), name: 'General', color: PALETTE[0]!, order: 0, general: true });
   useView.setState({ screen: 'workspace', view: 'tasks' });
   return true;
 }

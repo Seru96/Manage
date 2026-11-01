@@ -26,6 +26,13 @@ describe('findConflicts', () => {
     ])).toEqual([]);
   });
 
+  it('la subdivisión general no choca con las demás', () => {
+    expect(findConflicts([
+      t('a', 'general', 'ana', '2026-11-02', '2026-11-05'),
+      t('b', 'sur', 'ana', '2026-11-04', '2026-11-04'),
+    ], new Set(['general']))).toEqual([]);
+  });
+
   it('una tarea sin inicio ocupa solo su fecha límite', () => {
     const cs = findConflicts([
       t('a', 'norte', 'ana', null, '2026-11-10'),

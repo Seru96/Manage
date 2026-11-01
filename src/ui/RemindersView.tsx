@@ -3,8 +3,8 @@ import { fmtReminder, toLocalIso } from '../app/reminders';
 import { newId, REMINDER_KIND, type Reminder } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
-import { useSubdivisions } from '../store/selectors';
-import { useView } from '../store/view';
+import { inSubdivision, useSubdivisions } from '../store/selectors';
+import { openMenu, useView } from '../store/view';
 import { Icon } from './icons';
 
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
@@ -30,14 +30,14 @@ export function RemindersView() {
   const { overdue, upcoming, done } = useMemo(() => {
     const qq = norm(q.trim());
     const list = Object.values(reminders)
-      .filter((r) => (!subdivisionId || r.subdivisionId === subdivisionId) && (!qq || norm(r.title).includes(qq)))
+      .filter((r) => inSubdivision(r.subdivisionId, subdivisionId, subsMap) && (!qq || norm(r.title).includes(qq)))
       .sort((a, b) => a.at.localeCompare(b.at));
     return {
       overdue: list.filter((r) => !r.done && r.at < now),
       upcoming: list.filter((r) => !r.done && r.at >= now),
       done: list.filter((r) => r.done).reverse(),
     };
-  }, [reminders, subdivisionId, q, now]);
+  }, [reminders, subdivisionId, q, now, subsMap]);
 
   const add = () => {
     if (!draft.title.trim() || !draft.at) return;
@@ -49,7 +49,7 @@ export function RemindersView() {
     const sub = subsMap[r.subdivisionId ?? ''];
     const task = tasks[r.taskId ?? ''];
     return (
-      <div key={r.id} className={`rem-row${r.done ? ' done' : ''}${!r.done && r.at < now ? ' overdue' : ''}`} data-reminder={r.id}>
+      <div key={r.id} onContextMenu={(e) => openMenu(e, 'reminder', r.id)} className={`rem-row${r.done ? ' done' : ''}${!r.done && r.at < now ? ' overdue' : ''}`} data-reminder={r.id}>
         <input type="checkbox" checked={r.done} aria-label="Hecho" onChange={(e) => patch('reminder', r.id, { done: e.target.checked })} />
         <span className={`rem-kind ${r.kind}`}>{REMINDER_KIND[r.kind]}</span>
         <input className="rem-title" defaultValue={r.title} key={r.title}

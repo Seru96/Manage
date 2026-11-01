@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { newProjectFromExcel } from '../app/excel';
 import { createProject, openProject } from '../app/session';
 import { backend, type RecentProject } from '../platform/backend';
 import { useProject } from '../store/project';
+import { openOptions } from '../store/theme';
 import { useView } from '../store/view';
 import { Icon, type IconName } from './icons';
 
@@ -40,7 +42,8 @@ export function StartScreen() {
     setError(null);
     try { await fn(); } catch (e) { setError(String(e)); } finally { setBusy(false); }
   };
-  const create = () => act(createProject);
+  const create = () => act(() => createProject());
+  const fromExcel = () => act(async () => { await newProjectFromExcel(); return true; });
   const open = (path?: string) => act(() => openProject(path));
 
   const nav = (id: string, icon: IconName, label: string, onClick: () => void, on = false, hint?: string) => (
@@ -64,6 +67,9 @@ export function StartScreen() {
           {openPath && nav('back', 'tasks', 'Volver al proyecto', () => useView.setState({ screen: 'workspace' }))}
         </nav>
         <div className="start-foot">
+          <button className="start-nav-item start-options" data-action="options" onClick={openOptions} title="Opciones (⌘,)">
+            <Icon name="gear" /><span>Opciones</span>
+          </button>
           <span className="start-version">Versión {__APP_VERSION__}</span>
         </div>
       </aside>
@@ -71,13 +77,13 @@ export function StartScreen() {
       <main className="start-main">
         <div className="start-drag" data-tauri-drag-region />
         {error && <p className="start-error">No se pudo abrir: {error}</p>}
-        <Home busy={busy} create={create} open={open} />
+        <Home busy={busy} create={create} open={open} fromExcel={fromExcel} />
       </main>
     </div>
   );
 }
 
-function Home({ busy, create, open }: { busy: boolean; create: () => void; open: (path?: string) => void }) {
+function Home({ busy, create, open, fromExcel }: { busy: boolean; create: () => void; open: (path?: string) => void; fromExcel: () => void }) {
   const [recents, setRecents] = useState<RecentProject[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -105,6 +111,10 @@ function Home({ busy, create, open }: { busy: boolean; create: () => void; open:
           <button className="template" data-start="open" disabled={busy} onClick={() => open()}>
             <span className="thumb" aria-hidden><Icon name="folder" size={28} /></span>
             <span className="label">Abrir…</span>
+          </button>
+          <button className="template" data-start="excel" disabled={busy} onClick={fromExcel} title="Crear un proyecto a partir de un Excel exportado desde Manage (o con el mismo formato)">
+            <span className="thumb" aria-hidden><Icon name="excel" size={28} /></span>
+            <span className="label">Desde Excel…</span>
           </button>
         </div>
         <p className="start-hint muted">

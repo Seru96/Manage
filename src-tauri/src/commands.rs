@@ -102,3 +102,38 @@ pub fn recent_list(app: AppHandle) -> Vec<recents::RecentEntry> {
 pub fn recent_forget(app: AppHandle, path: PathBuf) {
     recents::forget(&app, &path);
 }
+
+const XLSX_MAX: usize = 64 * 1024 * 1024;
+
+fn xlsx_path(path: &std::path::Path) -> CmdResult<()> {
+    match path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref() {
+        Some("xlsx") => Ok(()),
+        _ => Err("El archivo debe ser .xlsx".into()),
+    }
+}
+
+/// Guarda un libro de Excel ya generado en el frontend (temporal + renombrado).
+#[tauri::command]
+pub fn export_xlsx(path: PathBuf, data: Vec<u8>) -> CmdResult<()> {
+    xlsx_path(&path)?;
+    if data.len() > XLSX_MAX {
+        return Err("El libro es demasiado grande".into());
+    }
+    let tmp = path.with_extension("xlsx.tmp");
+    std::fs::write(&tmp, &data).map_err(err)?;
+    std::fs::rename(&tmp, &path).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        err(e)
+    })
+}
+
+/// Lee un libro de Excel elegido por el usuario para importarlo (se devuelve en binario).
+#[tauri::command]
+pub fn import_xlsx(path: PathBuf) -> CmdResult<tauri::ipc::Response> {
+    xlsx_path(&path)?;
+    let len = std::fs::metadata(&path).map_err(err)?.len() as usize;
+    if len > XLSX_MAX {
+        return Err("El libro es demasiado grande".into());
+    }
+    std::fs::read(&path).map(tauri::ipc::Response::new).map_err(err)
+}

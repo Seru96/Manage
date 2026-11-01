@@ -8,7 +8,15 @@ export type TaskStatus = 'pendiente' | 'en_curso' | 'bloqueada' | 'hecha';
 export type DateStr = string;
 
 /** Subdivisión del proyecto (un sitio, una planta, una fase…). */
-export interface Subdivision { id: string; name: string; color: string; order: number }
+export interface Subdivision {
+  id: string; name: string; color: string; order: number;
+  /** La subdivisión «General» abarca a todas las demás: filtrar por ella enseña todo y sus
+   * tareas no chocan con las de los sitios. */
+  general?: boolean;
+}
+
+/** ¿Es la subdivisión general? (Los proyectos de la 0.1.0 la tienen sin marcar, pero se llama «General».) */
+export const isGeneral = (s: Subdivision | undefined | null) => !!s && (s.general ?? s.name.trim().toLowerCase() === 'general');
 
 /** Persona del equipo a la que se asignan tareas. */
 export interface Person { id: string; name: string; color: string }
@@ -95,10 +103,10 @@ export const CRITICALITY: Record<Criticality, { label: string; rank: number }> =
   critica: { label: 'Crítica', rank: 3 },
 };
 export const STATUS: Record<TaskStatus, string> = {
-  pendiente: 'Pendiente',
+  pendiente: 'Sin iniciar',
   en_curso: 'En curso',
   bloqueada: 'Bloqueada',
-  hecha: 'Hecha',
+  hecha: 'Completada',
 };
 
 /** Colores de subdivisiones y personas (los del sistema de Apple, legibles en claro y oscuro). */

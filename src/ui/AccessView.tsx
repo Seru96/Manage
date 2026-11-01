@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DEFAULT_ACCESS_COLUMNS, newId, type AccessPerson } from '../core/model';
+import { DEFAULT_ACCESS_COLUMNS, isGeneral, newId, type AccessPerson } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
 import { useSubdivisions } from '../store/selectors';
@@ -16,6 +16,7 @@ const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').to
 export function AccessView() {
   const colsMap = useProject((s) => s.entities.accessColumn);
   const people = useProject((s) => s.entities.accessPerson);
+  const subsMap = useProject((s) => s.entities.subdivision);
   const subs = useSubdivisions();
   const { subdivisionId, q } = useView((s) => s.filters);
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: 'apellidos', dir: 1 });
@@ -33,10 +34,10 @@ export function AccessView() {
   const rows = useMemo(() => {
     const qq = norm(q.trim());
     return Object.values(people)
-      .filter((p) => (!subdivisionId || p.siteIds.includes(subdivisionId)) && (!qq || norm(Object.values(p.values).join(' ')).includes(qq)))
+      .filter((p) => (!subdivisionId || isGeneral(subsMap[subdivisionId]) || p.siteIds.some((id) => id === subdivisionId || isGeneral(subsMap[id]))) && (!qq || norm(Object.values(p.values).join(' ')).includes(qq)))
       .sort((a, b) => sort.dir * (a.values[sort.col] ?? '').localeCompare(b.values[sort.col] ?? '', 'es', { numeric: true })
         || (a.values.nombre ?? '').localeCompare(b.values.nombre ?? '', 'es'));
-  }, [people, subdivisionId, q, sort]);
+  }, [people, subdivisionId, q, sort, subsMap]);
 
   useEffect(() => {
     if (!focusRow) return;
@@ -99,7 +100,7 @@ export function AccessView() {
           ))}
           <span />
           {subs.map((s) => (
-            <span key={s.id} className="site-head" title={`${s.name}: ${countIn(s.id)} con acceso`}>
+            <span key={s.id} className="site-head" title={isGeneral(s) ? 'Acceso general: a todos los sitios' : `${s.name}: ${countIn(s.id)} con acceso`}>
               <span className="swatch" style={{ background: s.color }} /><span className="site-name">{s.name}</span>
             </span>
           ))}
