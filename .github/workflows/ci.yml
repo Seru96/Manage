@@ -34,11 +34,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p manage-storage
 
-  # App de macOS (Apple Silicon): solo en main o a mano, porque en repos privados
-  # los minutos de macOS cuentan x10.
+  # App de macOS (Apple Silicon). También en los PR, para ver que los instaladores
+  # compilan antes de fusionar; solo se publica desde main.
   macos:
     needs: test
-    if: github.event_name != 'pull_request' && inputs.plataformas != 'windows'
+    if: inputs.plataformas != 'windows'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
   # de Windows cuentan x2 en repos privados.
   windows:
     needs: test
-    if: github.event_name != 'pull_request' && inputs.plataformas != 'macos'
+    if: inputs.plataformas != 'macos'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
