@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { conflictTaskIds, taskSpan } from '../core/conflicts';
 import { addDays, diffDays, fmtMonth, monthWeeks, parseDate, today } from '../core/dates';
-import { REMINDER_KIND, STATUS, type DateStr } from '../core/model';
+import { assignees, REMINDER_KIND, STATUS, type DateStr } from '../core/model';
 import { patch, useProject } from '../store/project';
-import { inSubdivision, useConflicts, useFilteredTasks } from '../store/selectors';
+import { inSubdivision, personLabel, useConflicts, useFilteredTasks } from '../store/selectors';
 import { editReminder, editTask, newTask, openMenu, useView } from '../store/view';
 import { Icon } from './icons';
+import { SubcontractMonth } from './SubcontractMonth';
 
 const WEEKDAYS = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 const MAX_LANES = 4;
@@ -70,6 +71,7 @@ export function CalendarView() {
   const inConflict = useMemo(() => conflictTaskIds(conflicts), [conflicts]);
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [colorBy, setColorBy] = useState<'subdivision' | 'person'>('subdivision');
+  const [tab, setTab] = useState<'tasks' | 'subs'>('tasks');
   const [drag, setDrag] = useState<Drag | null>(null);
   const moved = useRef(false);
 
@@ -81,11 +83,13 @@ export function CalendarView() {
     for (const t of tasks) {
       const span = taskSpan(t);
       if (!span) continue;
-      const who = people[t.assigneeId ?? ''];
-      const color = (colorBy === 'person' ? who?.color : subs[t.subdivisionId ?? '']?.color) ?? '#8e8e93';
+      const team = assignees(t).map((id) => people[id]).filter((p) => !!p);
+      const color = (colorBy === 'person' ? team[0]?.color : subs[t.subdivisionId ?? '']?.color) ?? '#8e8e93';
+      const names = team.map(personLabel);
       out.push({
-        key: `task:${t.id}`, kind: 'task', id: t.id, name: t.name, ...span, tone: t.status, color, who: who?.name,
-        tip: `${t.name} · ${STATUS[t.status]}${who ? ` · ${who.name}` : ''}`, conflict: inConflict.has(t.id), critical: t.criticality === 'critica',
+        key: `task:${t.id}`, kind: 'task', id: t.id, name: t.name, ...span, tone: t.status, color,
+        who: names.length > 1 ? `${names[0]!.split(' ')[0]} +${names.length - 1}` : names[0]?.split(' ')[0],
+        tip: `${t.name} · ${STATUS[t.status]}${names.length ? ` · ${names.join(', ')}` : ''}`, conflict: inConflict.has(t.id), critical: t.criticality === 'critica',
       });
     }
     if (!filters.personId) {
@@ -143,20 +147,25 @@ export function CalendarView() {
     <div className={`view calendar-view${drag ? ' dragging' : ''}`}>
       <div className="view-head">
         <h1>{fmtMonth(cursor.y, cursor.m)}</h1>
+        <div className="segmented cal-tabs" role="tablist" aria-label="Calendario">
+          <button role="tab" className={tab === 'tasks' ? 'on' : ''} data-cal-tab="tasks" onClick={() => setTab('tasks')}>Tareas</button>
+          <button role="tab" className={tab === 'subs' ? 'on' : ''} data-cal-tab="subs" onClick={() => setTab('subs')}>Subcontratas</button>
+        </div>
         <div className="seg-nav">
           <button className="btn icon-only" onClick={() => go(-1)} aria-label="Mes anterior"><Icon name="chevL" size={14} /></button>
           <button className="btn" onClick={() => { const d = new Date(); setCursor({ y: d.getFullYear(), m: d.getMonth() }); }}>Hoy</button>
           <button className="btn icon-only" onClick={() => go(1)} aria-label="Mes siguiente"><Icon name="chevR" size={14} /></button>
         </div>
-        <div className="view-tools">
+        {tab === 'tasks' && <div className="view-tools">
           <div className="segmented" role="radiogroup" aria-label="Color de la franja">
             <button className={colorBy === 'subdivision' ? 'on' : ''} onClick={() => setColorBy('subdivision')}>Por subdivisión</button>
             <button className={colorBy === 'person' ? 'on' : ''} onClick={() => setColorBy('person')}>Por persona</button>
           </div>
           <button className="btn primary" onClick={() => newTask()}><Icon name="plus" size={14} /> Nueva tarea</button>
-        </div>
+        </div>}
       </div>
 
+      {tab === 'subs' ? <SubcontractMonth weeks={weeks} month={cursor.m} /> : <>
       <div className="cal">
         <div className="cal-weekdays">{WEEKDAYS.map((d) => <span key={d}>{d}</span>)}</div>
         <div className="cal-weeks" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
@@ -192,7 +201,7 @@ export function CalendarView() {
                         onClick={() => { if (!moved.current) (e.kind === 'task' ? editTask(e.id) : editReminder(e.id)); }}>
                         {resizable && !s.clipL && <span className="ev-handle l" onPointerDown={(ev) => startDrag(ev, e, 'start')} />}
                         {e.kind === 'reminder' && <Icon name="bell" size={11} />}
-                        <span className="ev-label">{e.name}{e.who && colorBy === 'subdivision' ? <span className="ev-who"> · {e.who.split(' ')[0]}</span> : null}</span>
+                        <span className="ev-label">{e.name}{e.who && colorBy === 'subdivision' ? <span className="ev-who"> · {e.who}</span> : null}</span>
                         {resizable && !s.clipR && <span className="ev-handle r" onPointerDown={(ev) => startDrag(ev, e, 'end')} />}
                       </div>
                     );
@@ -208,6 +217,7 @@ export function CalendarView() {
         <span><span className="st-dot" style={{ background: 'var(--st-reminder)' }} />Recordatorio</span>
         <span className="cal-hint">Clic derecho en una tarea para cambiar su estado, moverla o borrarla</span>
       </div>
+      </>}
     </div>
   );
 }

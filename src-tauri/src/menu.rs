@@ -63,9 +63,10 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let view = SubmenuBuilder::new(app, "Ver")
         .item(&item("view.tasks", "Tareas", Some("CmdOrCtrl+1"))?)
         .item(&item("view.calendar", "Calendario", Some("CmdOrCtrl+2"))?)
-        .item(&item("view.notes", "Anotaciones", Some("CmdOrCtrl+3"))?)
-        .item(&item("view.reminders", "Recordatorios", Some("CmdOrCtrl+4"))?)
-        .item(&item("view.access", "Accesos a sitios", Some("CmdOrCtrl+5"))?);
+        .item(&item("view.reminders", "Recordatorios", Some("CmdOrCtrl+3"))?)
+        .item(&item("view.expenses", "Gastos", Some("CmdOrCtrl+4"))?)
+        .item(&item("view.docs", "Documentación", Some("CmdOrCtrl+5"))?)
+        .item(&item("view.team", "Equipo", Some("CmdOrCtrl+6"))?);
     #[cfg(target_os = "macos")]
     let view = view.separator().item(&PredefinedMenuItem::fullscreen(app, Some("Pantalla completa"))?);
     let view = view.build()?;

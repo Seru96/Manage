@@ -29,6 +29,10 @@ export interface Backend {
   saveXlsx(suggestedName: string, data: Uint8Array): Promise<boolean>;
   /** Pide un .xlsx y lo lee. */
   pickXlsx(): Promise<{ name: string; bytes: Uint8Array } | null>;
+  /** Elige un fichero cualquiera (para enlazarlo a un documento). Devuelve su ruta. */
+  pickFile(title: string, extensions?: string[]): Promise<string | null>;
+  /** Abre un enlace (web o fichero; relativo a la carpeta del proyecto) con la app del sistema. */
+  openLink(projectPath: string, target: string): Promise<void>;
 }
 
 export const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -86,6 +90,12 @@ function tauriBackend(): Backend {
       const buf = await call<ArrayBuffer>('import_xlsx', { path });
       return { name: path.split(/[\\/]/).pop() ?? path, bytes: new Uint8Array(buf) };
     },
+    async pickFile(title, extensions) {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const r = await open({ multiple: false, title, filters: extensions ? [{ name: 'Documento', extensions }] : undefined });
+      return typeof r === 'string' ? r : null;
+    },
+    openLink: (project, target) => call('open_link', { project, target }),
   };
 }
 
@@ -144,6 +154,11 @@ function browserBackend(): Backend {
       document.body.append(input);
       input.click();
     }),
+    pickFile: async () => null,
+    async openLink(_project, target) {
+      if (/^https?:\/\//i.test(target)) window.open(target, '_blank', 'noopener');
+      else throw new Error('En el navegador solo se abren enlaces web; los ficheros se abren desde la app');
+    },
   };
 }
 

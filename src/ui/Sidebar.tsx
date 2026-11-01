@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { toLocalIso } from '../app/reminders';
-import { isGeneral, newId, PALETTE } from '../core/model';
+import { assignees, isGeneral, newId, PALETTE, withAssignees } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
-import { usePeople, useSubdivisions } from '../store/selectors';
+import { personLabel, usePeople, useSubdivisions } from '../store/selectors';
 import { setFilters, setView, useView, type ViewId } from '../store/view';
 import { Icon, type IconName } from './icons';
 
 const VIEWS: { id: ViewId; label: string; icon: IconName; key: string }[] = [
   { id: 'tasks', label: 'Tareas', icon: 'tasks', key: '⌘1' },
   { id: 'calendar', label: 'Calendario', icon: 'calendar', key: '⌘2' },
-  { id: 'notes', label: 'Anotaciones', icon: 'notes', key: '⌘3' },
-  { id: 'reminders', label: 'Recordatorios', icon: 'bell', key: '⌘4' },
-  { id: 'access', label: 'Accesos a sitios', icon: 'badge', key: '⌘5' },
+  { id: 'reminders', label: 'Recordatorios', icon: 'bell', key: '⌘3' },
+  { id: 'expenses', label: 'Gastos', icon: 'money', key: '⌘4' },
+  { id: 'docs', label: 'Documentación', icon: 'docs', key: '⌘5' },
+  { id: 'team', label: 'Equipo', icon: 'badge', key: '⌘6' },
 ];
 
 /** Panel izquierdo: las vistas del proyecto, sus subdivisiones y el equipo. */
@@ -20,7 +21,8 @@ export function Sidebar() {
   const view = useView((s) => s.view);
   const filters = useView((s) => s.filters);
   const subs = useSubdivisions();
-  const people = usePeople();
+  // En el panel, solo el personal propio (las subcontratas están en Equipo y en el calendario).
+  const people = usePeople().filter((p) => !p.companyId);
   const tasks = useProject((s) => s.entities.task);
   const reminders = useProject((s) => s.entities.reminder);
   const nowIso = toLocalIso(new Date());
@@ -35,7 +37,10 @@ export function Sidebar() {
     setAdding(null);
     if (!n) return;
     if (kind === 'sub') upsert('subdivision', { id: newId(), name: n, color: PALETTE[subs.length % PALETTE.length]!, order: subs.length });
-    else upsert('person', { id: newId(), name: n, color: PALETTE[(people.length + 3) % PALETTE.length]! });
+    else {
+      const [nombre = '', ...rest] = n.split(/\s+/);
+      upsert('person', { id: newId(), name: n, color: PALETTE[(people.length + 3) % PALETTE.length]!, values: { nombre, apellidos: rest.join(' ') }, siteIds: [], companyId: null });
+    }
   };
 
   return (
@@ -76,13 +81,11 @@ export function Sidebar() {
         </div>
         <ul className="side-list">
           {people.map((p) => (
-            <EditableItem key={p.id} label={p.name} color={p.color} round on={filters.personId === p.id}
+            <EditableItem key={p.id} label={personLabel(p)} color={p.color} round on={filters.personId === p.id}
               onClick={() => setFilters({ personId: filters.personId === p.id ? null : p.id })}
               onRename={(name) => patch('person', p.id, { name })}
               onDelete={async () => {
-                if (!(await backend.ask(`¿Quitar a ${p.name} del equipo? Sus tareas quedarán sin asignar.`))) return;
-                for (const t of Object.values(tasks)) if (t.assigneeId === p.id) patch('task', t.id, { assigneeId: null });
-                remove('person', p.id);
+                if (await backend.ask(`¿Quitar a ${personLabel(p)} del equipo? Se le quitará de sus tareas.`)) removePerson(p.id);
               }} />
           ))}
           {adding === 'person' && <NewItem placeholder="Nombre y apellido" onDone={(n) => add('person', n)} />}
@@ -91,6 +94,15 @@ export function Sidebar() {
       </section>
     </aside>
   );
+}
+
+/** Quita a una persona del equipo y de las tareas en las que estaba. */
+export function removePerson(id: string) {
+  for (const t of Object.values(useProject.getState().entities.task)) {
+    const who = assignees(t);
+    if (who.includes(id)) patch('task', t.id, withAssignees(who.filter((x) => x !== id)));
+  }
+  remove('person', id);
 }
 
 function NewItem({ placeholder, onDone }: { placeholder: string; onDone: (name: string) => void }) {

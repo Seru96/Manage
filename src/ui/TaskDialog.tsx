@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { findConflicts } from '../core/conflicts';
 import { fmtShort, today } from '../core/dates';
-import { CRITICALITY, newId, STATUS, type Criticality, type Task, type TaskStatus } from '../core/model';
+import { assignees, CRITICALITY, newId, STATUS, withAssignees, type Criticality, type Task, type TaskStatus } from '../core/model';
 import { deleteTask } from '../app/items';
 import { withDue, withStart } from '../core/taskDates';
 import { upsert, useProject } from '../store/project';
-import { useGeneralIds, usePeople, useSubdivisions } from '../store/selectors';
+import { personLabel, useGeneralIds, useSubdivisions } from '../store/selectors';
+import { PeoplePicker } from './PeoplePicker';
 import { closeEditor, useView } from '../store/view';
 
 /** Crear o editar una tarea. */
@@ -15,7 +16,7 @@ export function TaskDialog() {
   const filters = useView((s) => s.filters);
   const subs = useSubdivisions();
   const generalIds = useGeneralIds();
-  const people = usePeople();
+  const people = useProject((s) => s.entities.person);
   const [t, setT] = useState<Task | null>(null);
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function TaskDialog() {
     if ('id' in editing) setT(tasks[editing.id] ? { ...tasks[editing.id]! } : null);
     else setT({
       id: newId(), name: '', description: '', criticality: 'media', status: 'pendiente',
-      subdivisionId: filters.subdivisionId ?? subs[0]?.id ?? null, assigneeId: filters.personId,
+      subdivisionId: filters.subdivisionId ?? subs[0]?.id ?? null, ...withAssignees(filters.personId ? [filters.personId] : []),
       start: null, due: today(), createdAt: Date.now(), ...editing.draft,
     });
     // Solo al abrir: las ediciones de otros mientras tanto no pisan el formulario.
@@ -65,12 +66,9 @@ export function TaskDialog() {
               {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
-          <label className="field">Asignado
-            <select value={t.assigneeId ?? ''} onChange={(e) => set({ assigneeId: e.target.value || null })}>
-              <option value="">Sin asignar</option>
-              {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
+        </div>
+        <div className="field">Asignados
+          <PeoplePicker value={assignees(t)} onChange={(ids) => set(withAssignees(ids))} />
         </div>
         <div className="field-row">
           <label className="field">Criticidad
@@ -94,8 +92,8 @@ export function TaskDialog() {
         </div>
         {clash.length > 0 && (
           <p className="warn-box">
-            ⚠︎ {people.find((p) => p.id === t.assigneeId)?.name} ya tiene tareas en otra subdivisión en esas fechas:{' '}
-            {clash.map((c) => { const o = c.a.id === t.id ? c.b : c.a; return `«${o.name}» (${fmtShort(c.from)})`; }).join(', ')}.
+            ⚠︎ Ya tienen tareas en otra subdivisión en esas fechas:{' '}
+            {clash.map((c) => { const o = c.a.id === t.id ? c.b : c.a; return `${personLabel(people[c.personId])}: «${o.name}» (${fmtShort(c.from)})`; }).join(', ')}.
           </p>
         )}
         <div className="dialog-buttons">

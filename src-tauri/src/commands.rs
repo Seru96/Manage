@@ -137,3 +137,43 @@ pub fn import_xlsx(path: PathBuf) -> CmdResult<tauri::ipc::Response> {
     }
     std::fs::read(&path).map(tauri::ipc::Response::new).map_err(err)
 }
+
+/// Extensiones que nunca se abren desde un enlace del proyecto (el fichero es compartido:
+/// un enlace no debe poder lanzar programas).
+const BLOCKED: &[&str] = &[
+    "exe", "msi", "bat", "cmd", "com", "scr", "ps1", "psm1", "vbs", "vbe", "js", "jse", "wsf", "wsh", "hta", "lnk", "reg",
+    "cpl", "jar", "sh", "command", "app", "pkg", "dmg", "url", "appref-ms", "msc",
+];
+
+/// Abre un enlace de un documento con la aplicación del sistema: una web (http/https) o un
+/// fichero. Las rutas relativas lo son a la carpeta del proyecto, que en cada equipo está en
+/// un sitio distinto (la carpeta de OneDrive de cada usuario).
+#[tauri::command]
+pub fn open_link(project: PathBuf, target: String) -> CmdResult<()> {
+    let t = target.trim();
+    let lower = t.to_ascii_lowercase();
+    let what: std::ffi::OsString = if lower.starts_with("https://") || lower.starts_with("http://") {
+        t.into()
+    } else {
+        if lower.contains("://") {
+            return Err("Solo se abren enlaces web (http/https) o ficheros".into());
+        }
+        let p = PathBuf::from(t.replace(['/', '\\'], std::path::MAIN_SEPARATOR_STR));
+        let full = if p.is_absolute() { p } else { project.parent().map(|d| d.join(&p)).unwrap_or(p) };
+        let ext = full.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
+        if BLOCKED.contains(&ext.as_str()) {
+            return Err(format!("Por seguridad no se abren ficheros .{ext} desde un enlace"));
+        }
+        if !full.exists() {
+            return Err(format!("No se encuentra {}", full.display()));
+        }
+        full.into_os_string()
+    };
+    #[cfg(target_os = "macos")]
+    let mut cmd = std::process::Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut cmd = std::process::Command::new("explorer");
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let mut cmd = std::process::Command::new("xdg-open");
+    cmd.arg(what).spawn().map(|_| ()).map_err(err)
+}

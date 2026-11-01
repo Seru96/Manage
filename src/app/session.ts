@@ -1,7 +1,8 @@
-import { newId, PALETTE } from '../core/model';
+import { DEFAULT_ACCESS_COLUMNS, newId, PALETTE } from '../core/model';
 import { backend } from '../platform/backend';
 import { flush, loadProject, syncNow, unloadProject, upsert, useProject } from '../store/project';
 import { toast, useView } from '../store/view';
+import { migrateProject } from './migrate';
 
 const stem = (path: string) => path.replace(/^.*[\\/]/, '').replace(/\.manage$/i, '');
 
@@ -16,6 +17,7 @@ export async function createProject(opts: { suggestedName?: string; empty?: bool
   // Una subdivisión para empezar, para que la vista de tareas no esté vacía.
   if (!opts.empty) upsert('subdivision', { id: newId(), name: 'General', color: PALETTE[0]!, order: 0, general: true });
   useView.setState({ screen: 'workspace', view: 'tasks' });
+  if (!opts.empty) for (const c of DEFAULT_ACCESS_COLUMNS) upsert('accessColumn', c);
   return true;
 }
 
@@ -29,6 +31,7 @@ export async function openProject(path?: string): Promise<boolean> {
   await closeProject(false);
   const snap = await backend.open(target);
   loadProject(target, snap, await backend.whoami());
+  migrateProject();
   useView.setState({ screen: 'workspace' });
   return true;
 }
