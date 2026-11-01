@@ -1,7 +1,8 @@
 import { useView } from '../store/view';
 import { CalendarView } from './CalendarView';
-import { AccessView } from './AccessView';
-import { NotesView } from './NotesView';
+import { DocsView } from './DocsView';
+import { ExpensesView } from './ExpensesView';
+import { TeamView } from './TeamView';
 import { RemindersView } from './RemindersView';
 import { Sidebar } from './Sidebar';
 import { ItemMenu } from './ItemMenu';
@@ -21,9 +22,10 @@ export function Workspace() {
         <main className="main">
           {view === 'tasks' ? <TasksView />
             : view === 'calendar' ? <CalendarView />
-              : view === 'notes' ? <NotesView />
-                : view === 'reminders' ? <RemindersView />
-                  : <AccessView />}
+              : view === 'reminders' ? <RemindersView />
+                : view === 'expenses' ? <ExpensesView />
+                  : view === 'docs' ? <DocsView />
+                    : <TeamView />}
         </main>
       </div>
       <TaskDialog />

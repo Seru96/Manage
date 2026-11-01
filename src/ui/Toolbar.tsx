@@ -4,7 +4,7 @@ import { showStart, syncCommand } from '../app/session';
 import { conflictDays } from '../core/conflicts';
 import { fmtShort } from '../core/dates';
 import { useProject, type SyncState } from '../store/project';
-import { useConflicts, usePeople, useSubdivisions } from '../store/selectors';
+import { personLabel, useConflicts, usePeople, useSubdivisions } from '../store/selectors';
 import { editTask, setFilters, useView } from '../store/view';
 import { openOptions } from '../store/theme';
 import { Icon } from './icons';
@@ -48,13 +48,13 @@ export function Toolbar() {
 
       <label className="tb-search">
         <Icon name="search" size={15} />
-        <input data-global-search type="search" placeholder="Buscar tareas (⌘F)" value={filters.q}
+        <input data-global-search type="search" placeholder="Buscar (⌘F)" value={filters.q}
           onChange={(e) => setFilters({ q: e.target.value })} />
       </label>
       <select className="tb-select" value={filters.personId ?? ''} onChange={(e) => setFilters({ personId: e.target.value || null })}
         aria-label="Filtrar por persona" title="Ver solo las tareas de una persona">
         <option value="">Todas las personas</option>
-        {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        {people.map((p) => <option key={p.id} value={p.id}>{personLabel(p)}</option>)}
       </select>
       <select className="tb-select" value={filters.subdivisionId ?? ''} onChange={(e) => setFilters({ subdivisionId: e.target.value || null })}
         aria-label="Filtrar por subdivisión">
@@ -90,7 +90,7 @@ export function Toolbar() {
           <div className="popover conflicts-pop" onMouseLeave={() => setShowConflicts(false)}>
             <h3>Conflictos de asignación</h3>
             {conflicts.map((c, i) => {
-              const who = people.find((p) => p.id === c.personId)?.name ?? '¿?';
+              const who = personLabel(people.find((p) => p.id === c.personId));
               const sub = (id: string | null) => subs.find((s) => s.id === id)?.name ?? '¿?';
               const days = conflictDays(c);
               return (

@@ -2,6 +2,24 @@
 
 Todos los cambios de IMPLANTA Manage, la versión más nueva arriba. Las descargas de cada versión están en [Descargas / Releases](README.md#descargas--releases).
 
+## 0.3.0 · 2026-11-01
+
+### Novedades
+- **Gastos**: pedidos (nº, nombre, descripción, proveedor, importe, fecha y subdivisión) con sus gastos. Cada pedido muestra lo gastado, lo que queda **disponible** (en rojo si se pasa) y cuánto está **facturado** y **sin facturar**; arriba, los totales. Filtro de facturados / sin facturar.
+- **Documentación**, en tres pestañas por subdivisión:
+  - Planos y docs: versiones A0, A1… («Nueva versión» y filtro «Solo la última versión»), estado Sin iniciar / Realizado (verde) / Firmado (morado) y enlaces para abrir cada formato (Word, Excel, PDF, Visio) desde su carpeta.
+  - Facturas y partes: con su PDF y un botón que lleva al gasto relacionado.
+  - Certificaciones: con su PDF.
+- **Equipo** sustituye a Accesos: una sola lista de personal propio y de subcontratas, con sus datos, los sitios a los que puede entrar y un **nombre corto** (primer nombre y primer apellido, editable) con el que se asignan las tareas. Las empresas subcontratadas se crean desde aquí.
+- **Calendario › Subcontratas**: qué días ha ido cada persona de cada empresa (clic en un día para marcarlo) y el resumen del mes por empresa.
+- **Varias personas por tarea**.
+- El Excel incluye todo lo nuevo (Empresas, Pedidos, Gastos, Planos y docs, Facturas y partes, Certificaciones y Asistencia).
+
+### Cambios
+- Se quita la vista Anotaciones (los datos se quedan en el fichero).
+- Al abrir un proyecto de la 0.2, la tabla de accesos y las personas pasan al nuevo Equipo.
+- Atajos de vistas: ⌘1 Tareas, ⌘2 Calendario, ⌘3 Recordatorios, ⌘4 Gastos, ⌘5 Documentación, ⌘6 Equipo.
+
 ## 0.2.0 · 2026-11-01
 
 ### Novedades

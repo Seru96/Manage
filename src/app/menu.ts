@@ -20,9 +20,10 @@ const ACTIONS: Record<string, () => void> = {
   'edit.find': inProject(() => document.querySelector<HTMLInputElement>('[data-global-search]')?.focus()),
   'view.tasks': inProject(() => setView('tasks')),
   'view.calendar': inProject(() => setView('calendar')),
-  'view.notes': inProject(() => setView('notes')),
   'view.reminders': inProject(() => setView('reminders')),
-  'view.access': inProject(() => setView('access')),
+  'view.expenses': inProject(() => setView('expenses')),
+  'view.docs': inProject(() => setView('docs')),
+  'view.team': inProject(() => setView('team')),
   'window.start': showStart,
 };
 
@@ -30,7 +31,7 @@ export function installMenu() {
   backend.onMenu((id) => ACTIONS[id]?.());
   // En el navegador no hay menú nativo: los mismos atajos con el teclado.
   if (backend.kind === 'browser') {
-    const keys: Record<string, string> = { '1': 'view.tasks', '2': 'view.calendar', '3': 'view.notes', '4': 'view.reminders', '5': 'view.access', f: 'edit.find', s: 'file.sync', e: 'file.exportXlsx', ',': 'app.options' };
+    const keys: Record<string, string> = { '1': 'view.tasks', '2': 'view.calendar', '3': 'view.reminders', '4': 'view.expenses', '5': 'view.docs', '6': 'view.team', f: 'edit.find', s: 'file.sync', e: 'file.exportXlsx', ',': 'app.options' };
     window.addEventListener('keydown', (e) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       const id = keys[e.key.toLowerCase()];

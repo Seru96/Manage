@@ -1,5 +1,5 @@
 import { diffDays } from './dates';
-import type { DateStr, Task } from './model';
+import { assignees, type DateStr, type Task } from './model';
 
 /** Inicio y fin de una tarea en el calendario (sin fecha límite no está en el calendario). */
 export function taskSpan(t: Pick<Task, 'start' | 'due'>): { start: DateStr; end: DateStr } | null {
@@ -25,12 +25,14 @@ export interface Conflict {
 export function findConflicts(tasks: Task[], generalIds: ReadonlySet<string> = new Set()): Conflict[] {
   const byPerson = new Map<string, { t: Task; start: DateStr; end: DateStr }[]>();
   for (const t of tasks) {
-    if (!t.assigneeId || !t.subdivisionId || generalIds.has(t.subdivisionId) || t.status === 'hecha') continue;
+    if (!t.subdivisionId || generalIds.has(t.subdivisionId) || t.status === 'hecha') continue;
     const span = taskSpan(t);
     if (!span) continue;
-    let list = byPerson.get(t.assigneeId);
-    if (!list) byPerson.set(t.assigneeId, (list = []));
-    list.push({ t, ...span });
+    for (const who of assignees(t)) {
+      let list = byPerson.get(who);
+      if (!list) byPerson.set(who, (list = []));
+      list.push({ t, ...span });
+    }
   }
   const out: Conflict[] = [];
   for (const [personId, list] of byPerson) {

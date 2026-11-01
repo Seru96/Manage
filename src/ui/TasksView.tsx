@@ -3,9 +3,9 @@ import { deleteReminder, deleteTask, moveItem } from '../app/items';
 import { fmtReminder } from '../app/reminders';
 import { conflictTaskIds } from '../core/conflicts';
 import { fmtShort, today } from '../core/dates';
-import { CRITICALITY, isGeneral, REMINDER_KIND, STATUS, type Reminder, type Task, type TaskStatus } from '../core/model';
+import { assignees, CRITICALITY, isGeneral, REMINDER_KIND, STATUS, type Reminder, type Task, type TaskStatus } from '../core/model';
 import { patch, useProject } from '../store/project';
-import { inSubdivision, useConflicts, useFilteredTasks, useSubdivisions } from '../store/selectors';
+import { inSubdivision, personLabel, useConflicts, useFilteredTasks, useSubdivisions } from '../store/selectors';
 import { editReminder, editTask, newReminder, newTask, openMenu, useView } from '../store/view';
 import { Icon } from './icons';
 
@@ -133,7 +133,7 @@ export function TasksView() {
                 );
               }
               const t = it.t;
-              const who = people[t.assigneeId ?? ''];
+              const team = assignees(t).map((id) => people[id]).filter((p) => !!p);
               const late = t.due && t.due < now && t.status !== 'hecha';
               return (
                 <div key={t.id} className={`task-row st-bg ${t.status}`} data-task={t.id} onClick={() => editTask(t.id)} {...dragProps('task', t.id)}>
@@ -143,7 +143,12 @@ export function TasksView() {
                     {t.description && <span className="muted desc">{t.description}</span>}
                   </span>
                   <span><span className={`crit ${t.criticality}`}>{CRITICALITY[t.criticality].label}</span></span>
-                  <span className="who">{who ? <><span className="avatar" style={{ background: who.color }}>{initials(who.name)}</span>{who.name}</> : <span className="muted">—</span>}</span>
+                  <span className="who" title={team.map(personLabel).join(', ')}>
+                    {team.length ? <>
+                      <span className="avatars">{team.slice(0, 3).map((p) => <span key={p.id} className="avatar" style={{ background: p.color }}>{initials(personLabel(p))}</span>)}</span>
+                      <span className="who-names">{team.length === 1 ? personLabel(team[0]) : `${personLabel(team[0]).split(' ')[0]} y ${team.length - 1} más`}</span>
+                    </> : <span className="muted">—</span>}
+                  </span>
                   <span className={late ? 'late' : ''}>{t.due ? (t.start && t.start !== t.due ? `${fmtShort(t.start)} – ${fmtShort(t.due)}` : fmtShort(t.due)) : <span className="muted">—</span>}</span>
                   <span onClick={(e) => e.stopPropagation()}>
                     <select className={`status st-bg ${t.status}`} value={t.status} aria-label="Estado" onChange={(e) => patch('task', t.id, { status: e.target.value as TaskStatus })}>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Reminder, Task } from '../core/model';
 
-export type ViewId = 'tasks' | 'calendar' | 'notes' | 'reminders' | 'access';
+export type ViewId = 'tasks' | 'calendar' | 'reminders' | 'expenses' | 'docs' | 'team';
 
 export interface Filters {
   /** Texto de búsqueda (nombre, descripción, persona, subdivisión). */
@@ -22,6 +22,8 @@ interface ViewState {
   /** Menú contextual de una tarea o un recordatorio. */
   menu: { x: number; y: number; kind: 'task' | 'reminder'; id: string } | null;
   toast: string | null;
+  /** Elemento a resaltar al saltar desde otra vista (p. ej. de una factura a su gasto). */
+  highlight: { kind: string; id: string } | null;
 }
 
 export const useView = create<ViewState>(() => ({
@@ -32,6 +34,7 @@ export const useView = create<ViewState>(() => ({
   editingReminder: null,
   menu: null,
   toast: null,
+  highlight: null,
 }));
 
 export const setView = (view: ViewId) => useView.setState({ view });
@@ -54,4 +57,10 @@ export function toast(msg: string) {
   clearTimeout(toastTimer);
   useView.setState({ toast: msg });
   toastTimer = setTimeout(() => useView.setState({ toast: null }), 3_500);
+}
+
+/** Abre una vista y resalta un elemento (se desplaza hasta él). */
+export function goTo(view: ViewId, kind: string, id: string) {
+  useView.setState({ view, highlight: { kind, id } });
+  setTimeout(() => { if (useView.getState().highlight?.id === id) useView.setState({ highlight: null }); }, 2_500);
 }

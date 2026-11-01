@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { findConflicts } from '../core/conflicts';
-import { isGeneral, type Person, type Subdivision, type Task } from '../core/model';
+import { assignees, isGeneral, type Company, type Person, type Subdivision, type Task } from '../core/model';
 import { useProject } from './project';
 import { useView, type Filters } from './view';
 
@@ -11,20 +11,33 @@ export function useSubdivisions(): Subdivision[] {
     Number(isGeneral(b)) - Number(isGeneral(a)) || a.order - b.order || a.name.localeCompare(b.name, 'es')), [map]);
 }
 
+/** Todo el equipo, el propio primero y luego por empresa. */
 export function usePeople(): Person[] {
   const map = useProject((s) => s.entities.person);
+  const companies = useProject((s) => s.entities.company);
+  return useMemo(() => Object.values(map).sort((a, b) =>
+    (companies[a.companyId ?? '']?.name ?? '').localeCompare(companies[b.companyId ?? '']?.name ?? '', 'es')
+    || personLabel(a).localeCompare(personLabel(b), 'es')), [map, companies]);
+}
+
+export function useCompanies(): Company[] {
+  const map = useProject((s) => s.entities.company);
   return useMemo(() => Object.values(map).sort((a, b) => a.name.localeCompare(b.name, 'es')), [map]);
 }
+
+/** Nombre a mostrar de una persona. */
+export const personLabel = (p: Person | undefined) => p?.name.trim() || [p?.values?.nombre, p?.values?.apellidos].filter(Boolean).join(' ') || 'Sin nombre';
 
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 export function matches(t: Task, f: Filters, people: Record<string, Person>, subs: Record<string, Subdivision>): boolean {
-  if (f.personId && t.assigneeId !== f.personId) return false;
+  const who = assignees(t);
+  if (f.personId && !who.includes(f.personId)) return false;
   if (!inSubdivision(t.subdivisionId, f.subdivisionId, subs)) return false;
   if (f.hideDone && t.status === 'hecha') return false;
   const q = norm(f.q.trim());
   if (!q) return true;
-  const hay = [t.name, t.description, people[t.assigneeId ?? '']?.name ?? '', subs[t.subdivisionId ?? '']?.name ?? ''];
+  const hay = [t.name, t.description, ...who.map((id) => people[id]?.name ?? ''), subs[t.subdivisionId ?? '']?.name ?? ''];
   return hay.some((h) => norm(h).includes(q));
 }
 
