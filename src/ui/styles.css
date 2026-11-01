@@ -324,7 +324,79 @@ select.status { height: 24px; width: 100%; }
 .calendar-view.dragging .ev:not(.active) { pointer-events: none; }
 .calendar-view.dragging .ev.active { pointer-events: none; }
 
-/* Vistas de la fase 2 */
-.placeholder-card { max-width: 560px; padding: 28px; border: 1px dashed var(--border); border-radius: 12px; background: var(--card); line-height: 1.5; }
-.placeholder-card p { margin: 10px 0; }
-.placeholder-card ul { margin: 0; padding-left: 18px; }
+
+.side-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; }
+
+/* Selector de subdivisión en Anotaciones y Accesos */
+.sub-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; flex: none; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: 13px; background: transparent; cursor: default; }
+.chip:hover { background: var(--control); }
+.chip.on { background: var(--row-on); border-color: var(--accent); }
+
+/* Anotaciones */
+.composer { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 10px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.composer textarea, .note-edit { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; outline: none; resize: vertical; font: inherit; line-height: 1.45; }
+.composer-bar { display: flex; align-items: center; gap: 8px; }
+.composer-bar select { height: 28px; }
+.composer-author { width: 220px; height: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--field-bg); outline: none; }
+.notes-list { flex: 1; overflow: auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.note-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.note-group-title { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; font-size: 13.5px; font-weight: 600; }
+.note-card { padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--muted); border-radius: 8px; background: var(--card); }
+.note-card.cliente { border-left-color: var(--accent); }
+.note-card.pm { border-left-color: #bf5af2; }
+.note-card header { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.note-card .row-action { width: 24px; height: 24px; }
+.note-card:not(:hover) .row-action { visibility: hidden; }
+.note-card p { margin: 6px 0 0; white-space: pre-wrap; line-height: 1.45; -webkit-user-select: text; user-select: text; }
+.note-src { padding: 0 7px; border-radius: 9px; font-size: 11px; font-weight: 600; background: var(--control); }
+.note-src.cliente { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.note-src.pm { background: color-mix(in srgb, #bf5af2 28%, transparent); }
+.note-linked { font-size: 11px; }
+.note-edit { margin-top: 6px; border: 1px solid var(--accent); background: var(--field-bg); }
+
+/* Recordatorios */
+.rem-form { flex: none; display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.rem-form input, .rem-form select { height: 30px; }
+.rem-form input { padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--field-bg); outline: none; }
+.rem-form input:focus { border-color: var(--accent); }
+.rem-new-title { flex: 1; min-width: 160px; }
+.rem-form select { max-width: 170px; }
+.rem-list { flex: 1; overflow: auto; min-height: 0; }
+.rem-h { display: flex; align-items: center; gap: 6px; margin: 12px 0 4px; padding: 0; border: 0; background: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); cursor: default; }
+.rem-h.overdue { color: var(--danger); }
+.rem-row { display: grid; grid-template-columns: 22px 130px minmax(160px, 1fr) minmax(0, 0.8fr) 190px 30px; align-items: center; gap: 10px; min-height: 38px; padding: 2px 10px; border-radius: 6px; }
+.rem-row:hover { background: var(--control); }
+.rem-row:not(:hover) .row-action { visibility: hidden; }
+.rem-row.done { opacity: 0.55; }
+.rem-row.done .rem-title { text-decoration: line-through; }
+.rem-row.overdue .rem-at { color: var(--danger); font-weight: 600; }
+.rem-kind { justify-self: start; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--control); }
+.rem-kind.prueba { background: color-mix(in srgb, var(--accent) 25%, transparent); }
+.rem-kind.hito { background: color-mix(in srgb, var(--warn) 28%, transparent); }
+.rem-title, .rem-at { min-width: 0; height: 28px; padding: 0 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; outline: none; }
+.rem-title:hover, .rem-at:hover { border-color: var(--border); }
+.rem-title:focus, .rem-at:focus { border-color: var(--accent); background: var(--field-bg); }
+.rem-meta { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.rem-foot { flex: none; margin: 10px 0 0; font-size: 12px; }
+
+/* Accesos */
+.access-table { flex: 1; overflow: auto; min-height: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--cal-bg); }
+.access-row { display: grid; align-items: center; width: max-content; min-width: 100%; border-bottom: 1px solid var(--hair); }
+.access-row.head { position: sticky; top: 0; z-index: 2; min-height: 34px; background: var(--panel-solid); border-bottom: 1px solid var(--border); font-size: 12px; }
+.access-row:not(.head):hover { background: var(--control); }
+.col-head { display: flex; align-items: center; min-width: 0; padding-right: 4px; }
+.col-label { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 0; background: none; text-align: left; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+.col-label:hover { color: var(--text); }
+.col-del { width: 18px; height: 18px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--muted); visibility: hidden; cursor: default; }
+.col-head:hover .col-del { visibility: visible; }
+.col-del:hover { background: var(--control-hover); color: var(--danger); }
+.col-rename { margin: 0 4px; height: 26px; padding: 0 6px; border: 1px solid var(--accent); border-radius: 5px; background: var(--field-bg); outline: none; }
+.site-head { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 2px; font-weight: 600; color: var(--muted); text-align: center; }
+.site-name { max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+.cell { width: 100%; height: 34px; padding: 0 10px; border: 0; border-right: 1px solid var(--hair); background: transparent; outline: none; min-width: 0; }
+.cell:focus { box-shadow: inset 0 0 0 2px var(--accent); background: var(--field-bg); }
+.site-cell { display: grid; place-items: center; height: 34px; }
+.access-row .row-action { width: 28px; height: 28px; }
+.access-row:not(:hover) .row-action { visibility: hidden; }
+.access-table .group-empty { margin: 16px; }

@@ -31,6 +31,8 @@ export interface Task {
 /** Anotación por subdivisión: feedback del cliente o del Project Manager. */
 export interface Note {
   id: string;
+  /** Si se convirtió en tarea. */
+  taskId?: string | null;
   subdivisionId: string | null;
   source: 'cliente' | 'pm' | 'interna';
   author: string;
@@ -50,18 +52,22 @@ export interface Reminder {
   done: boolean;
 }
 
-/** Columna personalizable de la tabla de accesos. */
+/** Columna de la tabla de accesos. Las de serie (nombre, apellidos, DNI, matrícula) tienen
+ * ids fijos para que dos personas que abren la vista a la vez no las dupliquen. */
 export interface AccessColumn { id: string; label: string; order: number }
+
+export const DEFAULT_ACCESS_COLUMNS: AccessColumn[] = [
+  { id: 'nombre', label: 'Nombre', order: 0 },
+  { id: 'apellidos', label: 'Apellidos', order: 1 },
+  { id: 'dni', label: 'DNI', order: 2 },
+  { id: 'matricula', label: 'Matrícula', order: 3 },
+];
 
 /** Persona con acceso a sitios (personal propio o de subcontratas). */
 export interface AccessPerson {
   id: string;
-  firstName: string;
-  lastName: string;
-  dni: string;
-  plate: string;
-  /** Valores de las columnas personalizadas, por id de columna. */
-  extra: Record<string, string>;
+  /** Valor de cada columna, por id de columna. */
+  values: Record<string, string>;
   /** Subdivisiones (sitios) a las que tiene acceso. */
   siteIds: string[];
 }
@@ -99,3 +105,6 @@ export const STATUS: Record<TaskStatus, string> = {
 export const PALETTE = ['#0a84ff', '#30d158', '#ff9f0a', '#bf5af2', '#ff375f', '#64d2ff', '#ffd60a', '#ac8e68', '#5e5ce6', '#ff6961'];
 
 export const newId = () => crypto.randomUUID();
+
+export const NOTE_SOURCE: Record<Note['source'], string> = { cliente: 'Cliente', pm: 'Project Manager', interna: 'Interna' };
+export const REMINDER_KIND: Record<Reminder['kind'], string> = { prueba: 'Prueba con cliente', hito: 'Hito', otro: 'Otro' };

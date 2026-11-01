@@ -1,6 +1,8 @@
 import { useView } from '../store/view';
 import { CalendarView } from './CalendarView';
-import { Placeholder } from './Placeholder';
+import { AccessView } from './AccessView';
+import { NotesView } from './NotesView';
+import { RemindersView } from './RemindersView';
 import { Sidebar } from './Sidebar';
 import { TaskDialog } from './TaskDialog';
 import { TasksView } from './TasksView';
@@ -15,7 +17,11 @@ export function Workspace() {
       <div className="workspace">
         <Sidebar />
         <main className="main">
-          {view === 'tasks' ? <TasksView /> : view === 'calendar' ? <CalendarView /> : <Placeholder view={view} />}
+          {view === 'tasks' ? <TasksView />
+            : view === 'calendar' ? <CalendarView />
+              : view === 'notes' ? <NotesView />
+                : view === 'reminders' ? <RemindersView />
+                  : <AccessView />}
         </main>
       </div>
       <TaskDialog />

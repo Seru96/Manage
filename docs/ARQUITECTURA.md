@@ -54,8 +54,8 @@ copias es genérica (ver §4). Tipos (`src/core/model.ts`):
 | `task` | nombre, descripción, **criticidad** (baja/media/alta/crítica), estado, **asignado**, inicio (opcional), **fecha límite**, subdivisión |
 | `note` | subdivisión, origen (cliente / PM / interna), autor, texto, fecha |
 | `reminder` | título, fecha y hora, tipo (prueba / hito), subdivisión o tarea, hecho |
-| `accessColumn` | columnas personalizadas de la tabla de accesos |
-| `accessPerson` | nombre, apellidos, DNI, matrícula, valores de columnas propias y **sitios con acceso** (`siteIds`) |
+| `accessColumn` | columnas de la tabla de accesos. Las de serie (nombre, apellidos, DNI, matrícula) tienen ids fijos para que no se dupliquen al crearlas dos personas a la vez |
+| `accessPerson` | valor de cada columna (`values`) y **sitios con acceso** (`siteIds`) |
 
 Una tarea ocupa en el calendario del inicio a la fecha límite; si no tiene inicio, solo el día límite.
 
@@ -114,6 +114,9 @@ Flujo: **Inicio → elegir proyecto → espacio de trabajo** con:
 - **Panel izquierdo**: vistas (⌘1…⌘5), subdivisiones y equipo. Clic en una subdivisión o persona filtra; doble clic renombra.
 - **Barra superior**: proyecto y estado de sincronización, búsqueda global (⌘F), filtros por persona y subdivisión, ocultar hechas y el aviso de conflictos.
 - **Tareas**: agrupadas por subdivisión, ordenables por fecha límite, criticidad o nombre; crear, editar, borrar y cambiar estado en línea.
+- **Anotaciones**: por subdivisión, con origen (cliente, PM, interna), autor y fecha; editar, borrar y convertir en tarea.
+- **Recordatorios**: vencidos, próximos y hechos. Notificación nativa a su hora mientras la app está abierta (se comprueba cada 30 s) y, al abrir el proyecto, de los que vencieron con la app cerrada. Lo ya avisado se recuerda por equipo, no en el proyecto, para que cada persona reciba su aviso.
+- **Accesos a sitios**: tabla editable con columnas propias (añadir, renombrar con doble clic, quitar, ordenar), una casilla por subdivisión y filtro por sitio.
 - **Calendario**: mes de lunes a domingo, eventos de varios días en carriles (como Calendario de Apple). Arrastrar mueve, tirar de los bordes alarga o acorta (también entre semanas), doble clic en un día crea una tarea. Color por subdivisión o por persona.
 
 ## 6. Plan
@@ -121,6 +124,6 @@ Flujo: **Inicio → elegir proyecto → espacio de trabajo** con:
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1 | Esqueleto, formato `.manage`, sincronización, inicio, tareas, calendario, búsqueda, filtros y conflictos | este PR |
-| 2 | Anotaciones por subdivisión; recordatorios con notificación nativa (`tauri-plugin-notification`, ya incluido); tabla de accesos con columnas propias y sitios | siguiente |
-| 3 | Exportar/importar Excel, presencia («Ana tiene el proyecto abierto»), historial de cambios por tarea, firma y publicación de instaladores (como Install) | |
+| 2 | Anotaciones por subdivisión; recordatorios con notificación nativa; tabla de accesos con columnas propias y sitios | hecho |
+| 3 | Avisos con la app cerrada (icono en la bandeja / al iniciar sesión), exportar/importar Excel (tareas y accesos), presencia («Ana tiene el proyecto abierto»), historial de cambios por tarea, firma y publicación de instaladores (como Install) | |
 | 4 | iPad/iOS: misma app con Tauri 2 móvil; la sincronización pasa a Microsoft Graph, porque en iOS no hay carpeta de OneDrive sincronizada | |

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toLocalIso } from '../app/reminders';
 import { newId, PALETTE } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
@@ -21,6 +22,9 @@ export function Sidebar() {
   const subs = useSubdivisions();
   const people = usePeople();
   const tasks = useProject((s) => s.entities.task);
+  const reminders = useProject((s) => s.entities.reminder);
+  const nowIso = toLocalIso(new Date());
+  const dueCount = Object.values(reminders).filter((r) => !r.done && r.at <= nowIso).length;
   const [adding, setAdding] = useState<'sub' | 'person' | null>(null);
 
   const countOf = (subId: string) => Object.values(tasks).filter((t) => t.subdivisionId === subId && t.status !== 'hecha').length;
@@ -39,6 +43,7 @@ export function Sidebar() {
         {VIEWS.map((v) => (
           <button key={v.id} className={`side-item${view === v.id ? ' on' : ''}`} data-view={v.id} onClick={() => setView(v.id)} title={`${v.label} (${v.key})`}>
             <Icon name={v.icon} size={18} /><span>{v.label}</span>
+            {v.id === 'reminders' && dueCount > 0 && <span className="side-badge" title="Recordatorios vencidos">{dueCount}</span>}
           </button>
         ))}
       </nav>
