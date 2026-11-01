@@ -18,6 +18,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let app_menu = SubmenuBuilder::new(app, "IMPLANTA Manage")
         .item(&PredefinedMenuItem::about(app, Some("Acerca de IMPLANTA Manage"), Some(AboutMetadata::default()))?)
         .separator()
+        .item(&item("app.options", "Ajustes…", Some("CmdOrCtrl+,"))?)
+        .separator()
         .item(&PredefinedMenuItem::services(app, None)?)
         .separator()
         .item(&PredefinedMenuItem::hide(app, Some("Ocultar IMPLANTA Manage"))?)
@@ -33,9 +35,16 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .separator()
         .item(&item("file.sync", "Sincronizar ahora", Some("CmdOrCtrl+S"))?)
         .separator()
+        .item(&item("file.importXlsx", "Importar desde Excel…", None)?)
+        .item(&item("file.exportXlsx", "Exportar a Excel…", Some("CmdOrCtrl+E"))?)
+        .separator()
         .item(&item("file.close", "Cerrar proyecto", Some("CmdOrCtrl+W"))?);
     #[cfg(not(target_os = "macos"))]
-    let file = file.separator().item(&PredefinedMenuItem::quit(app, Some("Salir"))?);
+    let file = file
+        .separator()
+        .item(&item("app.options", "Opciones…", Some("CmdOrCtrl+,"))?)
+        .separator()
+        .item(&PredefinedMenuItem::quit(app, Some("Salir"))?);
     let file = file.build()?;
 
     let edit = SubmenuBuilder::new(app, "Edición")

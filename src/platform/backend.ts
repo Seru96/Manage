@@ -25,10 +25,15 @@ export interface Backend {
   /** Pregunta de sí/no con el diálogo nativo. */
   ask(message: string): Promise<boolean>;
   onMenu(handler: (id: string) => void): void;
+  /** Pide dónde guardar y guarda un .xlsx. Devuelve false si se cancela. */
+  saveXlsx(suggestedName: string, data: Uint8Array): Promise<boolean>;
+  /** Pide un .xlsx y lo lee. */
+  pickXlsx(): Promise<{ name: string; bytes: Uint8Array } | null>;
 }
 
 export const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
+const XLSX = [{ name: 'Libro de Excel', extensions: ['xlsx'] }];
 const FILTER = [{ name: 'Proyecto IMPLANTA Manage', extensions: ['manage'] }];
 
 function tauriBackend(): Backend {
@@ -66,6 +71,20 @@ function tauriBackend(): Backend {
     },
     onMenu(handler) {
       void import('@tauri-apps/api/event').then(({ listen }) => listen<string>('menu', (e) => handler(e.payload)));
+    },
+    async saveXlsx(name, data) {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const path = await save({ defaultPath: `${name}.xlsx`, filters: XLSX, title: 'Exportar a Excel' });
+      if (!path) return false;
+      await call('export_xlsx', { path, data: Array.from(data) });
+      return true;
+    },
+    async pickXlsx() {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const path = await open({ multiple: false, filters: XLSX, title: 'Importar desde Excel' });
+      if (typeof path !== 'string') return null;
+      const buf = await call<ArrayBuffer>('import_xlsx', { path });
+      return { name: path.split(/[\\/]/).pop() ?? path, bytes: new Uint8Array(buf) };
     },
   };
 }
@@ -105,6 +124,26 @@ function browserBackend(): Backend {
     async notify(title, body) { if ('Notification' in window && (await Notification.requestPermission()) === 'granted') new Notification(title, { body }); },
     ask: async (message) => confirm(message),
     onMenu: () => {},
+    async saveXlsx(name, data) {
+      const url = URL.createObjectURL(new Blob([data as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: `${name}.xlsx` });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
+    },
+    pickXlsx: () => new Promise((resolve) => {
+      const input = Object.assign(document.createElement('input'), { type: 'file', accept: '.xlsx' });
+      input.dataset.xlsxPicker = '';
+      input.style.display = 'none';
+      input.onchange = async () => {
+        const f = input.files?.[0];
+        input.remove();
+        resolve(f ? { name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) } : null);
+      };
+      input.oncancel = () => { input.remove(); resolve(null); };
+      document.body.append(input);
+      input.click();
+    }),
   };
 }
 

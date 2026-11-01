@@ -19,12 +19,13 @@ export interface Conflict {
 
 /**
  * Una misma persona asignada a tareas de dos subdivisiones distintas en fechas que se
- * solapan. Las tareas hechas no cuentan.
+ * solapan. Las tareas completadas no cuentan, ni las de la subdivisión general (abarca a
+ * todas, así que no choca con ninguna).
  */
-export function findConflicts(tasks: Task[]): Conflict[] {
+export function findConflicts(tasks: Task[], generalIds: ReadonlySet<string> = new Set()): Conflict[] {
   const byPerson = new Map<string, { t: Task; start: DateStr; end: DateStr }[]>();
   for (const t of tasks) {
-    if (!t.assigneeId || !t.subdivisionId || t.status === 'hecha') continue;
+    if (!t.assigneeId || !t.subdivisionId || generalIds.has(t.subdivisionId) || t.status === 'hecha') continue;
     const span = taskSpan(t);
     if (!span) continue;
     let list = byPerson.get(t.assigneeId);

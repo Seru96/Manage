@@ -30,6 +30,8 @@ pub fn run() {
             commands::recent_list,
             commands::recent_forget,
             commands::whoami,
+            commands::export_xlsx,
+            commands::import_xlsx,
         ])
         .run(tauri::generate_context!())
         .expect("error al arrancar la app");

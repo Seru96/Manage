@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { findConflicts } from '../core/conflicts';
-import type { Person, Subdivision, Task } from '../core/model';
+import { isGeneral, type Person, type Subdivision, type Task } from '../core/model';
 import { useProject } from './project';
 import { useView, type Filters } from './view';
 
+/** Subdivisiones en orden, la general siempre la primera. */
 export function useSubdivisions(): Subdivision[] {
   const map = useProject((s) => s.entities.subdivision);
-  return useMemo(() => Object.values(map).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'es')), [map]);
+  return useMemo(() => Object.values(map).sort((a, b) =>
+    Number(isGeneral(b)) - Number(isGeneral(a)) || a.order - b.order || a.name.localeCompare(b.name, 'es')), [map]);
 }
 
 export function usePeople(): Person[] {
@@ -18,12 +20,26 @@ const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').to
 
 export function matches(t: Task, f: Filters, people: Record<string, Person>, subs: Record<string, Subdivision>): boolean {
   if (f.personId && t.assigneeId !== f.personId) return false;
-  if (f.subdivisionId && t.subdivisionId !== f.subdivisionId) return false;
+  if (!inSubdivision(t.subdivisionId, f.subdivisionId, subs)) return false;
   if (f.hideDone && t.status === 'hecha') return false;
   const q = norm(f.q.trim());
   if (!q) return true;
   const hay = [t.name, t.description, people[t.assigneeId ?? '']?.name ?? '', subs[t.subdivisionId ?? '']?.name ?? ''];
   return hay.some((h) => norm(h).includes(q));
+}
+
+/**
+ * ¿Pertenece algo de la subdivisión `own` a la elegida en el filtro? La general abarca a
+ * todas: elegida, lo enseña todo; y lo suyo sale también al elegir cualquier otra.
+ */
+export function inSubdivision(own: string | null, filter: string | null, subs: Record<string, Subdivision>): boolean {
+  if (!filter || own === filter) return true;
+  return isGeneral(subs[filter]) || isGeneral(subs[own ?? '']);
+}
+
+export function useGeneralIds(): Set<string> {
+  const subs = useProject((s) => s.entities.subdivision);
+  return useMemo(() => new Set(Object.values(subs).filter(isGeneral).map((s) => s.id)), [subs]);
 }
 
 /** Tareas que pasan la búsqueda y los filtros (los mismos en todas las vistas). */
@@ -38,5 +54,6 @@ export function useFilteredTasks(): Task[] {
 /** Conflictos de todo el proyecto (no dependen de los filtros). */
 export function useConflicts() {
   const tasks = useProject((s) => s.entities.task);
-  return useMemo(() => findConflicts(Object.values(tasks)), [tasks]);
+  const general = useGeneralIds();
+  return useMemo(() => findConflicts(Object.values(tasks), general), [tasks, general]);
 }

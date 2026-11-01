@@ -49,18 +49,18 @@ copias es genérica (ver §4). Tipos (`src/core/model.ts`):
 
 | kind | Campos |
 |---|---|
-| `subdivision` | nombre, color, orden. Un sitio, una planta, una fase… |
+| `subdivision` | nombre, color, orden y `general`. Un sitio, una planta, una fase… La **General** (la que se crea con el proyecto, o la que se llame así) abarca todas: al filtrarla se ve todo y lo suyo aparece en cualquier subdivisión |
 | `person` | nombre, color. El equipo al que se asignan tareas |
 | `task` | nombre, descripción, **criticidad** (baja/media/alta/crítica), estado, **asignado**, inicio (opcional), **fecha límite**, subdivisión |
 | `note` | subdivisión, origen (cliente / PM / interna), autor, texto, fecha |
-| `reminder` | título, fecha y hora, tipo (prueba / hito), subdivisión o tarea, hecho |
+| `reminder` | título, fecha y hora, tipo (prueba / hito), subdivisión o tarea, hecho. Sin tarea, sale como elemento propio en la lista de tareas y en el calendario |
 | `accessColumn` | columnas de la tabla de accesos. Las de serie (nombre, apellidos, DNI, matrícula) tienen ids fijos para que no se dupliquen al crearlas dos personas a la vez |
 | `accessPerson` | valor de cada columna (`values`) y **sitios con acceso** (`siteIds`) |
 
 Una tarea ocupa en el calendario del inicio a la fecha límite; si no tiene inicio, solo el día límite.
 
 **Conflictos** (`src/core/conflicts.ts`): una persona con tareas no terminadas en **dos
-subdivisiones distintas** cuyas fechas se solapan. Se avisa en la barra superior, en la tarea,
+subdivisiones distintas** cuyas fechas se solapan (las de General no cuentan). Se avisa en la barra superior, en la tarea,
 en el día del calendario y al editar.
 
 ## 4. Almacenamiento y sincronización con SharePoint/Teams
@@ -99,13 +99,20 @@ fuera, el mismo modelo (filas con fecha y autor) sirve para sincronizar contra M
 sin cambiar el formato.
 
 **Excel**: el formato de trabajo es SQLite porque Excel no aguanta bien escrituras
-concurrentes ni fusiones por fila. Para compartir con quien no use la app, se exportará a
-`.xlsx` (como la LCE de Install) en la fase 2.
+concurrentes ni fusiones por fila. Para compartir con quien no use la app, o preparar un
+proyecto en Excel, se exporta e importa un `.xlsx` (`src/core/excel.ts`, sin dependencias: el
+escritor y el lector mínimos de Install en `src/core/xlsx/`). Una hoja por tipo con cabecera
+fija: Proyecto, Subdivisiones, Equipo, Tareas, Anotaciones, Recordatorios y Accesos (una
+columna por cada columna de la tabla y otra por sitio, con «Sí»). La columna ID enlaza cada
+fila con su elemento: al importar se actualiza lo que existe, se crea lo nuevo (filas sin ID)
+y no se borra nada; las filas sin cambios se ignoran. Las subdivisiones, personas y tareas se
+pueden escribir por nombre y se crean si no existen. Las fechas valen como fecha de Excel,
+`2026-11-03` o `03/11/2026`.
 
 ## 5. Interfaz
 
-Copiada de IMPLANTA Install: mismas variables de color (oscuro por defecto, claro según el
-sistema), misma pantalla de inicio (barra lateral Inicio/Nuevo/Abrir, «Buenos días»,
+Copiada de IMPLANTA Install: mismas variables de color y los mismos tres temas (oscuro,
+híbrido y claro, en Opciones ⌘,), misma pantalla de inicio (barra lateral Inicio/Nuevo/Abrir, «Buenos días»,
 plantillas y Recientes), misma barra superior con hueco para los semáforos de macOS y los
 mismos menús nativos.
 
@@ -113,7 +120,8 @@ Flujo: **Inicio → elegir proyecto → espacio de trabajo** con:
 
 - **Panel izquierdo**: vistas (⌘1…⌘5), subdivisiones y equipo. Clic en una subdivisión o persona filtra; doble clic renombra.
 - **Barra superior**: proyecto y estado de sincronización, búsqueda global (⌘F), filtros por persona y subdivisión, ocultar hechas y el aviso de conflictos.
-- **Tareas**: agrupadas por subdivisión, ordenables por fecha límite, criticidad o nombre; crear, editar, borrar y cambiar estado en línea.
+- **Tareas**: agrupadas por subdivisión, ordenables por fecha límite, criticidad o nombre; fondo según el estado (gris sin iniciar, azul en curso, rojo bloqueada, verde completada). Crear, editar, borrar y cambiar estado en línea; arrastrar una fila a otra subdivisión la mueve.
+- **En cualquier vista**, clic derecho en una tarea o recordatorio: editar, estado, mover a otra subdivisión, duplicar y borrar.
 - **Anotaciones**: por subdivisión, con origen (cliente, PM, interna), autor y fecha; editar, borrar y convertir en tarea.
 - **Recordatorios**: vencidos, próximos y hechos. Notificación nativa a su hora mientras la app está abierta (se comprueba cada 30 s) y, al abrir el proyecto, de los que vencieron con la app cerrada. Lo ya avisado se recuerda por equipo, no en el proyecto, para que cada persona reciba su aviso.
 - **Accesos a sitios**: tabla editable con columnas propias (añadir, renombrar con doble clic, quitar, ordenar), una casilla por subdivisión y filtro por sitio.
@@ -125,5 +133,6 @@ Flujo: **Inicio → elegir proyecto → espacio de trabajo** con:
 |---|---|---|
 | 1 | Esqueleto, formato `.manage`, sincronización, inicio, tareas, calendario, búsqueda, filtros y conflictos | este PR |
 | 2 | Anotaciones por subdivisión; recordatorios con notificación nativa; tabla de accesos con columnas propias y sitios | hecho |
-| 3 | Avisos con la app cerrada (icono en la bandeja / al iniciar sesión), exportar/importar Excel (tareas y accesos), presencia («Ana tiene el proyecto abierto»), historial de cambios por tarea, firma y publicación de instaladores (como Install) | |
+| 2.1 (v0.2.0) | Excel (exportar, importar, nuevo desde Excel), temas, colores por estado, menú contextual, General abarca todo, recordatorios como elementos | hecho |
+| 3 | Avisos con la app cerrada (icono en la bandeja / al iniciar sesión), presencia («Ana tiene el proyecto abierto»), historial de cambios por tarea, firma y publicación de instaladores (como Install) | |
 | 4 | iPad/iOS: misma app con Tauri 2 móvil; la sincronización pasa a Microsoft Graph, porque en iOS no hay carpeta de OneDrive sincronizada | |

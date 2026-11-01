@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { newId, NOTE_SOURCE, type Note } from '../core/model';
+import { isGeneral, newId, NOTE_SOURCE, type Note } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
-import { useSubdivisions } from '../store/selectors';
+import { inSubdivision, useSubdivisions } from '../store/selectors';
 import { newTask, useView } from '../store/view';
 import { Icon } from './icons';
 import { SubChips } from './SubChips';
@@ -13,6 +13,7 @@ const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').to
 /** Anotaciones por subdivisión: feedback del cliente, del PM o notas internas. */
 export function NotesView() {
   const notes = useProject((s) => s.entities.note);
+  const subsMap = useProject((s) => s.entities.subdivision);
   const user = useProject((s) => s.user);
   const tasks = useProject((s) => s.entities.task);
   const subs = useSubdivisions();
@@ -24,10 +25,10 @@ export function NotesView() {
   const shown = useMemo(() => {
     const qq = norm(q.trim());
     return Object.values(notes)
-      .filter((n) => (!subdivisionId || n.subdivisionId === subdivisionId) && (!source || n.source === source)
+      .filter((n) => inSubdivision(n.subdivisionId, subdivisionId, subsMap) && (!source || n.source === source)
         && (!qq || norm(`${n.body} ${n.author}`).includes(qq)))
       .sort((a, b) => b.createdAt - a.createdAt);
-  }, [notes, subdivisionId, source, q]);
+  }, [notes, subdivisionId, source, q, subsMap]);
 
   const groups = useMemo(() => {
     const list = subs.map((s) => ({ id: s.id as string | null, name: s.name, color: s.color, notes: shown.filter((n) => n.subdivisionId === s.id) }));
@@ -86,7 +87,7 @@ export function NotesView() {
       <div className="notes-list">
         {groups.map((g) => (
           <section key={g.id ?? 'none'} className="note-group">
-            {!subdivisionId && <h2 className="note-group-title"><span className="swatch" style={{ background: g.color }} />{g.name}</h2>}
+            {(!subdivisionId || isGeneral(subsMap[subdivisionId])) && <h2 className="note-group-title"><span className="swatch" style={{ background: g.color }} />{g.name}</h2>}
             {g.notes.map((n) => (
               <article key={n.id} className={`note-card ${n.source}`} data-note={n.id}>
                 <header>

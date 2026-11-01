@@ -4,6 +4,8 @@ import { AccessView } from './AccessView';
 import { NotesView } from './NotesView';
 import { RemindersView } from './RemindersView';
 import { Sidebar } from './Sidebar';
+import { ItemMenu } from './ItemMenu';
+import { ReminderDialog } from './ReminderDialog';
 import { TaskDialog } from './TaskDialog';
 import { TasksView } from './TasksView';
 import { Toolbar } from './Toolbar';
@@ -25,6 +27,8 @@ export function Workspace() {
         </main>
       </div>
       <TaskDialog />
+      <ReminderDialog />
+      <ItemMenu />
     </div>
   );
 }

@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { findConflicts } from '../core/conflicts';
 import { fmtShort, today } from '../core/dates';
 import { CRITICALITY, newId, STATUS, type Criticality, type Task, type TaskStatus } from '../core/model';
-import { backend } from '../platform/backend';
-import { remove, upsert, useProject } from '../store/project';
-import { usePeople, useSubdivisions } from '../store/selectors';
+import { deleteTask } from '../app/items';
+import { withDue, withStart } from '../core/taskDates';
+import { upsert, useProject } from '../store/project';
+import { useGeneralIds, usePeople, useSubdivisions } from '../store/selectors';
 import { closeEditor, useView } from '../store/view';
 
 /** Crear o editar una tarea. */
@@ -13,6 +14,7 @@ export function TaskDialog() {
   const tasks = useProject((s) => s.entities.task);
   const filters = useView((s) => s.filters);
   const subs = useSubdivisions();
+  const generalIds = useGeneralIds();
   const people = usePeople();
   const [t, setT] = useState<Task | null>(null);
 
@@ -43,10 +45,8 @@ export function TaskDialog() {
     upsert('task', fixed);
     closeEditor();
   };
-  const del = async () => {
-    if (await backend.ask(`¿Borrar la tarea «${t.name}»?`)) { remove('task', t.id); closeEditor(); }
-  };
-  const clash = findConflicts([...Object.values(tasks).filter((x) => x.id !== t.id), t]).filter((c) => c.a.id === t.id || c.b.id === t.id);
+  const del = async () => { if (await deleteTask(t.id)) closeEditor(); };
+  const clash = findConflicts([...Object.values(tasks).filter((x) => x.id !== t.id), t], generalIds).filter((c) => c.a.id === t.id || c.b.id === t.id);
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) closeEditor(); }}>
@@ -86,10 +86,10 @@ export function TaskDialog() {
         </div>
         <div className="field-row">
           <label className="field"><span>Inicio <span className="muted">(opcional)</span></span>
-            <input type="date" value={t.start ?? ''} max={t.due ?? undefined} onChange={(e) => set({ start: e.target.value || null })} />
+            <input type="date" value={t.start ?? ''} onChange={(e) => set(withStart(t, e.target.value || null))} />
           </label>
           <label className="field">Fecha límite
-            <input type="date" value={t.due ?? ''} onChange={(e) => set({ due: e.target.value || null })} />
+            <input type="date" value={t.due ?? ''} min={t.start ?? undefined} onChange={(e) => set(withDue(t, e.target.value || null))} />
           </label>
         </div>
         {clash.length > 0 && (

@@ -16,6 +16,7 @@ nueva de `src-tauri/tauri.conf.json` crea además su release `vX.Y.Z` con las no
 
 | Versión | Fecha | Novedades | macOS | Windows 11 |
 |---|---|---|---|---|
+| **0.2.0** | 2026-11-01 | Exportar e importar a Excel, temas claro/híbrido/oscuro, colores por estado, editar/mover/borrar desde cualquier vista, «General» abarca todo y recordatorios como elementos propios. | [Descargar DMG V0.2.0](https://github.com/Seru96/Manage/releases/download/v0.2.0/IMPLANTA-Manage-0.2.0.dmg) | [Descargar EXE V0.2.0](https://github.com/Seru96/Manage/releases/download/v0.2.0/IMPLANTA-Manage-0.2.0-setup.exe) |
 | **0.1.0** | 2026-11-01 | Primera versión: proyectos en la carpeta de Teams, tareas por subdivisión, calendario, búsqueda, filtros y conflictos; anotaciones, recordatorios con aviso nativo y accesos a sitios. | [Descargar DMG V0.1.0](https://github.com/Seru96/Manage/releases/download/v0.1.0/IMPLANTA-Manage-0.1.0.dmg) | [Descargar EXE V0.1.0](https://github.com/Seru96/Manage/releases/download/v0.1.0/IMPLANTA-Manage-0.1.0-setup.exe) |
 
 **macOS** (Apple Silicon): arrastra IMPLANTA Manage a Aplicaciones y, como aún no está notarizada,

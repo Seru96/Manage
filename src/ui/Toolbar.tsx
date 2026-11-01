@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { exportExcel, importExcel } from '../app/excel';
 import { showStart, syncCommand } from '../app/session';
 import { conflictDays } from '../core/conflicts';
 import { fmtShort } from '../core/dates';
 import { useProject, type SyncState } from '../store/project';
 import { useConflicts, usePeople, useSubdivisions } from '../store/selectors';
 import { editTask, setFilters, useView } from '../store/view';
+import { openOptions } from '../store/theme';
 import { Icon } from './icons';
 
 const SYNC_TEXT: Record<SyncState, string> = {
@@ -25,6 +27,8 @@ export function Toolbar() {
   const subs = useSubdivisions();
   const conflicts = useConflicts();
   const [showConflicts, setShowConflicts] = useState(false);
+  const [showExcel, setShowExcel] = useState(false);
+  const excel = (fn: () => Promise<void>) => () => { setShowExcel(false); void fn(); };
 
   return (
     <header className="toolbar" data-tauri-drag-region>
@@ -61,6 +65,21 @@ export function Toolbar() {
         <input type="checkbox" checked={filters.hideDone} onChange={(e) => setFilters({ hideDone: e.target.checked })} /> Ocultar hechas
       </label>
 
+      <div className="tb-pop-anchor" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowExcel(false); }}>
+        <button className="tb-btn" data-action="excel" onClick={() => setShowExcel((v) => !v)} title="Exportar o importar el proyecto en Excel" aria-label="Excel" aria-expanded={showExcel}>
+          <Icon name="excel" size={16} />
+        </button>
+        {showExcel && (
+          <div className="context-menu tb-menu" role="menu">
+            <button role="menuitem" data-action="export-xlsx" onClick={excel(exportExcel)}>Exportar a Excel… <kbd>⌘E</kbd></button>
+            <button role="menuitem" data-action="import-xlsx" onClick={excel(importExcel)}>Importar desde Excel…</button>
+            <span className="menu-label wrap">Al importar se actualiza lo que ya existe (por ID) y se añade lo nuevo; no se borra nada.</span>
+          </div>
+        )}
+      </div>
+      <button className="tb-btn" data-action="options" onClick={openOptions} title="Opciones: apariencia clara, híbrida u oscura (⌘,)" aria-label="Opciones">
+        <Icon name="gear" size={16} />
+      </button>
       <div className="tb-pop-anchor">
         <button className={`tb-btn conflicts${conflicts.length ? ' on' : ''}`} data-conflicts={conflicts.length}
           onClick={() => setShowConflicts((v) => !v)} disabled={!conflicts.length}
