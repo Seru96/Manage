@@ -4,14 +4,20 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      plataformas:
+        description: Qué instaladores compilar
+        type: choice
+        options: [todas, macos, windows]
+        default: todas
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Pruebas rápidas en Linux (minutos baratos). Los instaladores de macOS y Windows
-  # se añadirán como en IMPLANTA Install.
+  # Pruebas rápidas en Linux (minutos baratos).
   test:
     runs-on: ubuntu-latest
     steps:
@@ -27,3 +33,98 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p manage-storage
+
+  # App de macOS (Apple Silicon): solo en main o a mano, porque en repos privados
+  # los minutos de macOS cuentan x10.
+  macos:
+    needs: test
+    if: github.event_name != 'pull_request' && inputs.plataformas != 'windows'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - name: Compilar IMPLANTA Manage.app y .dmg
+        run: npm run tauri build -- --bundles app,dmg
+      - name: Preparar artefactos
+        run: cp "$(ls target/release/bundle/dmg/*.dmg | head -1)" Manage-dev.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Manage-dmg
+          path: Manage-dev.dmg
+          retention-days: 14
+
+  # Instalador de Windows 10/11 (x64, NSIS, sin permisos de administrador). Los minutos
+  # de Windows cuentan x2 en repos privados.
+  windows:
+    needs: test
+    if: github.event_name != 'pull_request' && inputs.plataformas != 'macos'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - name: Compilar el instalador .exe
+        run: npm run tauri build -- --bundles nsis
+      - name: Preparar artefactos
+        shell: bash
+        run: cp "$(ls target/release/bundle/nsis/*.exe | head -1)" Manage-dev-setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Manage-windows
+          path: Manage-dev-setup.exe
+          retention-days: 14
+
+  # Publica en la release "dev" lo que se haya compilado (si una plataforma falla,
+  # la otra se publica igualmente) y crea la release estable vX.Y.Z la primera vez.
+  publish:
+    needs: [macos, windows]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (needs.macos.result == 'success' || needs.windows.result == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-release
+          merge-multiple: true
+      - name: Publicar en la release "dev"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAC: ${{ needs.macos.result }}
+          WIN: ${{ needs.windows.result }}
+        run: |
+          git tag -f dev
+          git push -f origin refs/tags/dev
+          NOTES="Última compilación de main: ${GITHUB_SHA::7} ($(date -u '+%Y-%m-%d %H:%M UTC')). macOS: Manage-dev.dmg (${MAC}). Windows: Manage-dev-setup.exe (${WIN}). Sin firmar ni notarizar: ver README para abrirlas."
+          gh release view dev >/dev/null 2>&1 || gh release create dev --prerelease --title "IMPLANTA Manage · desarrollo" --notes "$NOTES"
+          gh release edit dev --notes "$NOTES"
+          gh release upload dev dist-release/* --clobber
+      # Release estable de la versión de tauri.conf.json: se crea la primera vez que se compila
+      # esa versión y después no se toca, salvo para añadir un instalador que faltara.
+      - name: Publicar la versión estable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(jq -r .version src-tauri/tauri.conf.json)
+          mkdir -p estable
+          [ -f dist-release/Manage-dev.dmg ] && cp dist-release/Manage-dev.dmg "estable/IMPLANTA-Manage-$V.dmg"
+          [ -f dist-release/Manage-dev-setup.exe ] && cp dist-release/Manage-dev-setup.exe "estable/IMPLANTA-Manage-$V-setup.exe"
+          if ! gh release view "v$V" >/dev/null 2>&1; then
+            scripts/notas-version.sh "$V" > notas.md
+            gh release create "v$V" estable/* --target "$GITHUB_SHA" --title "IMPLANTA Manage $V" --notes-file notas.md --latest
+          else
+            have=$(gh release view "v$V" --json assets -q '.assets[].name')
+            for f in estable/*; do grep -qx "$(basename "$f")" <<<"$have" || gh release upload "v$V" "$f"; done
+          fi
