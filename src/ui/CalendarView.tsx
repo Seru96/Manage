@@ -3,7 +3,7 @@ import { conflictTaskIds, taskSpan } from '../core/conflicts';
 import { addDays, diffDays, fmtMonth, monthWeeks, parseDate, today } from '../core/dates';
 import { assignees, REMINDER_KIND, STATUS, type DateStr } from '../core/model';
 import { patch, useProject } from '../store/project';
-import { inSubdivision, personLabel, useConflicts, useFilteredTasks } from '../store/selectors';
+import { inSubdivision, personLabel, taskOnlyFilter, useConflicts, useFilteredTasks } from '../store/selectors';
 import { editReminder, editTask, newTask, openMenu, useView } from '../store/view';
 import { Icon } from './icons';
 import { SubcontractMonth } from './SubcontractMonth';
@@ -92,7 +92,7 @@ export function CalendarView() {
         tip: `${t.name} · ${STATUS[t.status]}${names.length ? ` · ${names.join(', ')}` : ''}`, conflict: inConflict.has(t.id), critical: t.criticality === 'critica',
       });
     }
-    if (!filters.personId) {
+    if (!taskOnlyFilter(filters)) {
       const q = norm(filters.q.trim());
       for (const r of Object.values(reminders)) {
         if (r.taskId || !inSubdivision(r.subdivisionId, filters.subdivisionId, subs) || (q && !norm(r.title).includes(q)) || (filters.hideDone && r.done)) continue;
@@ -166,7 +166,7 @@ export function CalendarView() {
       </div>
 
       {tab === 'subs' ? <SubcontractMonth weeks={weeks} month={cursor.m} /> : <>
-      <div className="cal">
+      <div className="cal" data-drop="task">
         <div className="cal-weekdays">{WEEKDAYS.map((d) => <span key={d}>{d}</span>)}</div>
         <div className="cal-weeks" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
           {weeks.map((week) => {
@@ -180,7 +180,7 @@ export function CalendarView() {
                   return (
                     <div key={d} data-date={d}
                       className={`cal-day${date.getMonth() !== cursor.m ? ' other' : ''}${d === now ? ' today' : ''}${i >= 5 ? ' weekend' : ''}${conflictDays.has(d) ? ' conflict' : ''}`}
-                      onDoubleClick={() => newTask({ due: d })} title="Doble clic para crear una tarea este día">
+                      onDoubleClick={() => newTask({ due: d })} title="Doble clic para crear una tarea este día · arrastra aquí a alguien del panel para asignarle una tarea">
                       <span className="cal-num">{date.getDate() === 1 ? date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : date.getDate()}</span>
                       {conflictDays.has(d) && <span className="cal-warn" title="Alguien está asignado a dos subdivisiones este día"><Icon name="warn" size={12} /></span>}
                       {hidden.get(i) ? <span className="cal-more">+{hidden.get(i)} más</span> : null}

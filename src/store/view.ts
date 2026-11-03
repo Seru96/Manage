@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Reminder, Task } from '../core/model';
+import type { Criticality, Reminder, Task, TaskStatus } from '../core/model';
 
 export type ViewId = 'tasks' | 'calendar' | 'reminders' | 'expenses' | 'docs' | 'team';
 
@@ -8,8 +8,14 @@ export interface Filters {
   q: string;
   personId: string | null;
   subdivisionId: string | null;
+  /** Empresa: «own» (personal propio), el id de una subcontrata o null (todas). */
+  companyId: string | null;
+  status: TaskStatus | null;
+  criticality: Criticality | null;
   hideDone: boolean;
 }
+
+export const NO_FILTERS: Filters = { q: '', personId: null, subdivisionId: null, companyId: null, status: null, criticality: null, hideDone: false };
 
 interface ViewState {
   screen: 'start' | 'workspace';
@@ -29,7 +35,7 @@ interface ViewState {
 export const useView = create<ViewState>(() => ({
   screen: 'start',
   view: 'tasks',
-  filters: { q: '', personId: null, subdivisionId: null, hideDone: false },
+  filters: { ...NO_FILTERS },
   editing: null,
   editingReminder: null,
   menu: null,
@@ -39,6 +45,10 @@ export const useView = create<ViewState>(() => ({
 
 export const setView = (view: ViewId) => useView.setState({ view });
 export const setFilters = (f: Partial<Filters>) => useView.setState((s) => ({ filters: { ...s.filters, ...f } }));
+/** Quita los filtros (no la búsqueda). */
+export const clearFilters = () => useView.setState((s) => ({ filters: { ...NO_FILTERS, q: s.filters.q } }));
+/** Cuántos filtros hay puestos (sin contar la búsqueda). */
+export const activeFilters = (f: Filters) => [f.personId, f.subdivisionId, f.companyId, f.status, f.criticality].filter(Boolean).length + (f.hideDone ? 1 : 0);
 export const editTask = (id: string) => useView.setState({ editing: { id } });
 export const newTask = (draft: Partial<Task> = {}) => useView.setState({ editing: { draft } });
 export const closeEditor = () => useView.setState({ editing: null });

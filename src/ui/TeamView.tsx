@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { autoName, DEFAULT_ACCESS_COLUMNS, isGeneral, newId, PALETTE, type Person } from '../core/model';
+import { autoName, DEFAULT_ACCESS_COLUMNS, isGeneral, newId, PALETTE, toggleSiteIds, type Person } from '../core/model';
 import { backend } from '../platform/backend';
 import { patch, remove, upsert, useProject } from '../store/project';
 import { personLabel, useCompanies, useSubdivisions } from '../store/selectors';
-import { useView } from '../store/view';
+import { setFilters, useView } from '../store/view';
 import { Icon } from './icons';
 import { removePerson } from './Sidebar';
 import { SubChips } from './SubChips';
@@ -22,8 +22,10 @@ export function TeamView() {
   const subsMap = useProject((s) => s.entities.subdivision);
   const subs = useSubdivisions();
   const companies = useCompanies();
-  const { subdivisionId, q } = useView((s) => s.filters);
-  const [tab, setTab] = useState<Tab>('all');
+  const { subdivisionId, q, companyId } = useView((s) => s.filters);
+  // La pestaña es el mismo filtro de empresa de la barra superior (vale en todas las vistas).
+  const tab: Tab = companyId ?? 'all';
+  const setTab = (t: Tab) => setFilters({ companyId: t === 'all' ? null : t });
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 }>({ col: 'apellidos', dir: 1 });
   const [renaming, setRenaming] = useState<string | null>(null);
   const [focusRow, setFocusRow] = useState<string | null>(null);
@@ -86,10 +88,7 @@ export function TeamView() {
     const follow = !p.name.trim() || p.name === autoName(values);
     patch('person', p.id, { values: next, ...(follow ? { name: autoName(next) } : {}) });
   };
-  const toggleSite = (p: Person, site: string, on: boolean) => {
-    const cur = p.siteIds ?? [];
-    patch('person', p.id, { siteIds: on ? [...new Set([...cur, site])] : cur.filter((s) => s !== site) });
-  };
+  const toggleSite = (p: Person, site: string, on: boolean) => patch('person', p.id, { siteIds: toggleSiteIds(p.siteIds ?? [], site, on, subs) });
 
   const countIn = (site: string) => Object.values(people).filter((p) => p.siteIds?.includes(site)).length;
   const grid = `24px 170px 150px ${cols.map(() => '140px').join(' ')} 24px ${subs.map(() => '76px').join(' ')} 36px minmax(0, 1fr)`;

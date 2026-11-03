@@ -30,6 +30,7 @@ export function DocsView() {
   const highlight = useView((s) => s.highlight);
   const [section, setSection] = useState<DocSection>('plano');
   const [latest, setLatest] = useState(true);
+  const [status, setStatus] = useState<DocStatus | ''>('');
   const [editing, setEditing] = useState<{ doc: Doc; isNew: boolean } | null>(null);
 
   // Al llegar desde un gasto: abrir la pestaña de su documento y bajar hasta él.
@@ -47,8 +48,8 @@ export function DocsView() {
     const qq = norm(q.trim());
     let list = all.filter((d) => d.section === section);
     if (section === 'plano' && latest) list = latestVersions(list);
-    return list.filter((d) => inSubdivision(d.subdivisionId, subdivisionId, subsMap) && (!qq || norm([d.name, d.description, d.version].join(' ')).includes(qq)));
-  }, [all, section, latest, q, subdivisionId, subsMap]);
+    return list.filter((d) => inSubdivision(d.subdivisionId, subdivisionId, subsMap) && (!status || d.status === status) && (!qq || norm([d.name, d.description, d.version].join(' ')).includes(qq)));
+  }, [all, section, latest, q, subdivisionId, subsMap, status]);
 
   const groups = useMemo(() => {
     const by = new Map<string | null, Doc[]>();
@@ -76,6 +77,10 @@ export function DocsView() {
       <div className="view-head">
         <h1>Documentación</h1>
         <div className="view-tools">
+          <select className="tb-select" value={status} aria-label="Filtrar por estado" onChange={(e) => setStatus(e.target.value as DocStatus | '')}>
+            <option value="">Todos los estados</option>
+            {Object.entries(DOC_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
           {section === 'plano' && (
             <label className="check muted" title="Ver solo la versión más reciente de cada documento">
               <input type="checkbox" checked={latest} onChange={(e) => setLatest(e.target.checked)} /> Solo la última versión

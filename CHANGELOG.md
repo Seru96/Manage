@@ -2,6 +2,22 @@
 
 Todos los cambios de IMPLANTA Manage, la versión más nueva arriba. Las descargas de cada versión están en [Descargas / Releases](README.md#descargas--releases).
 
+## 0.4.0 · 2026-11-03
+
+### Novedades
+- **Arrastrar personal al calendario**. El panel izquierdo tiene ahora «Personal», con buscador y una división por empresa (el personal propio y cada subcontrata). Si arrastras a alguien al calendario de **Tareas**, se abre una tarea nueva con esa persona y ese día. Si lo arrastras al de **Subcontratas**, se apunta su jornada sin preguntar. Desde la cabecera de una empresa se arrastra a toda su gente a la vez.
+- **Jornadas de subcontratas como gasto de un pedido**. Desde un pedido («Jornadas») o desde el resumen de Subcontratas («Cargar a un pedido») eliges la empresa, las fechas, el sitio y el personal, y pones el precio por jornada y persona. El importe se calcula solo (jornadas × precio). Si alguna jornada ya está cargada en otro gasto, se avisa.
+- Los pedidos pueden ir asociados a una **subcontrata**.
+- Un gasto nuevo sale con **1 €** de base. Al pulsar el importe se vacía para escribir el real; si se deja vacío, se queda en 1 €.
+- **Filtros en todas las vistas**. Un botón de filtros en la barra superior permite filtrar por empresa (o personal propio), persona, estado y criticidad, además de la subdivisión. Los filtros puestos se ven como etiquetas, que se quitan con un clic. La empresa filtra también Equipo, Subcontratas y Gastos. En Documentación se puede filtrar por estado.
+
+### Correcciones
+- **Subcontratas**: el sitio de cada jornada ahora se guarda y se ve. Cada persona tiene su propio sitio en el diálogo, y con «Poner este sitio a los marcados» se cambia el de todos a la vez. Cada día enseña cada empresa con su color y, dentro, cada sitio con el color de su subdivisión. El resumen del mes desglosa las jornadas por sitio.
+- **Equipo**: marcar la casilla de General marca todas las subdivisiones, y quitarla las quita todas. Si se quita un sitio, se quita también General.
+
+### Excel
+- Pedidos lleva la columna «Subcontrata». Gastos lleva «Jornadas» y «€ por jornada» (solo informativas).
+
 ## 0.3.0 · 2026-11-01
 
 ### Novedades
