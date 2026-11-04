@@ -143,5 +143,6 @@ Flujo: **Inicio → elegir proyecto → espacio de trabajo** con:
 | 2 | Anotaciones por subdivisión; recordatorios con notificación nativa; tabla de accesos con columnas propias y sitios | hecho |
 | 2.1 (v0.2.0) | Excel (exportar, importar, nuevo desde Excel), temas, colores por estado, menú contextual, General abarca todo, recordatorios como elementos | hecho |
 | 2.2 (v0.3.0) | Gastos, Documentación, Equipo con subcontratas, calendario de subcontratas, varias personas por tarea; fuera Anotaciones | hecho |
+| 2.3 (v0.4.0) | Arrastrar personal al calendario, jornadas de subcontratas en pedidos, filtros globales (empresa, persona, estado, criticidad), sitio por jornada | hecho |
 | 3 | Avisos con la app cerrada (icono en la bandeja / al iniciar sesión), presencia («Ana tiene el proyecto abierto»), historial de cambios por tarea, firma y publicación de instaladores (como Install) | |
 | 4 | iPad/iOS: misma app con Tauri 2 móvil; la sincronización pasa a Microsoft Graph, porque en iOS no hay carpeta de OneDrive sincronizada | |

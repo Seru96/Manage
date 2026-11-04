@@ -6,6 +6,8 @@ import { TeamView } from './TeamView';
 import { RemindersView } from './RemindersView';
 import { Sidebar } from './Sidebar';
 import { ItemMenu } from './ItemMenu';
+import { ActiveFilters } from './ActiveFilters';
+import { DragGhost } from './PersonDrag';
 import { ReminderDialog } from './ReminderDialog';
 import { TaskDialog } from './TaskDialog';
 import { TasksView } from './TasksView';
@@ -20,6 +22,7 @@ export function Workspace() {
       <div className="workspace">
         <Sidebar />
         <main className="main">
+          <ActiveFilters />
           {view === 'tasks' ? <TasksView />
             : view === 'calendar' ? <CalendarView />
               : view === 'reminders' ? <RemindersView />
@@ -31,6 +34,7 @@ export function Workspace() {
       <TaskDialog />
       <ReminderDialog />
       <ItemMenu />
+      <DragGhost />
     </div>
   );
 }

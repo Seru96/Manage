@@ -30,9 +30,22 @@ export const personLabel = (p: Person | undefined) => p?.name.trim() || [p?.valu
 
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
+/** Filtros que solo tienen sentido en tareas: con alguno puesto, los recordatorios sueltos no salen. */
+export const taskOnlyFilter = (f: Filters) => !!(f.personId || f.companyId || f.status || f.criticality);
+
+/** ¿Es la persona de la empresa del filtro? («own»: personal propio; null: cualquiera). */
+export function inCompany(p: Person | undefined, filter: string | null): boolean {
+  if (!filter) return true;
+  if (!p) return false;
+  return filter === 'own' ? !p.companyId : p.companyId === filter;
+}
+
 export function matches(t: Task, f: Filters, people: Record<string, Person>, subs: Record<string, Subdivision>): boolean {
   const who = assignees(t);
   if (f.personId && !who.includes(f.personId)) return false;
+  if (f.companyId && !who.some((id) => inCompany(people[id], f.companyId))) return false;
+  if (f.status && t.status !== f.status) return false;
+  if (f.criticality && t.criticality !== f.criticality) return false;
   if (!inSubdivision(t.subdivisionId, f.subdivisionId, subs)) return false;
   if (f.hideDone && t.status === 'hecha') return false;
   const q = norm(f.q.trim());

@@ -5,7 +5,7 @@ import { conflictTaskIds } from '../core/conflicts';
 import { fmtShort, today } from '../core/dates';
 import { assignees, CRITICALITY, isGeneral, REMINDER_KIND, STATUS, type Reminder, type Task, type TaskStatus } from '../core/model';
 import { patch, useProject } from '../store/project';
-import { inSubdivision, personLabel, useConflicts, useFilteredTasks, useSubdivisions } from '../store/selectors';
+import { inSubdivision, personLabel, taskOnlyFilter, useConflicts, useFilteredTasks, useSubdivisions } from '../store/selectors';
 import { editReminder, editTask, newReminder, newTask, openMenu, useView } from '../store/view';
 import { Icon } from './icons';
 
@@ -35,7 +35,7 @@ export function TasksView() {
 
   // Recordatorios sueltos (sin tarea), con los mismos filtros. No tienen persona asignada.
   const reminders = useMemo(() => {
-    if (filters.personId) return [];
+    if (taskOnlyFilter(filters)) return [];
     const q = norm(filters.q.trim());
     return Object.values(allReminders).filter((r) => !r.taskId && inSubdivision(r.subdivisionId, filters.subdivisionId, subsMap)
       && (!q || norm(r.title).includes(q)) && !(filters.hideDone && r.done));

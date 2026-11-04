@@ -47,8 +47,8 @@ const H = {
   company: ['ID', 'Nombre', 'Color'],
   task: ['ID', 'Subdivisión', 'Nombre', 'Descripción', 'Criticidad', 'Estado', 'Asignados', 'Inicio', 'Fecha límite'],
   reminder: ['ID', 'Título', 'Fecha y hora', 'Tipo', 'Subdivisión', 'Tarea', 'Hecho'],
-  order: ['ID', 'Nº pedido', 'Nombre', 'Descripción', 'Proveedor', 'Subdivisión', 'Fecha', 'Importe', 'Gastado', 'Disponible', 'Facturado', 'Sin facturar'],
-  expense: ['ID', 'Nº pedido', 'Nombre', 'Descripción', 'Fecha', 'Importe', 'Facturado', 'Nº factura'],
+  order: ['ID', 'Nº pedido', 'Nombre', 'Descripción', 'Proveedor', 'Subcontrata', 'Subdivisión', 'Fecha', 'Importe', 'Gastado', 'Disponible', 'Facturado', 'Sin facturar'],
+  expense: ['ID', 'Nº pedido', 'Nombre', 'Descripción', 'Fecha', 'Importe', 'Facturado', 'Nº factura', 'Jornadas', '€ por jornada'],
   plano: ['ID', 'Serie', 'Subdivisión', 'Nombre', 'Descripción', 'Versión', 'Última', 'Estado', 'Fecha', 'Word', 'Excel', 'PDF', 'Visio', 'Otro'],
   factura: ['ID', 'Subdivisión', 'Nombre', 'Descripción', 'Fecha', 'ID gasto', 'Gasto', 'PDF'],
   certificacion: ['ID', 'Subdivisión', 'Nombre', 'Descripción', 'Fecha', 'PDF'],
@@ -103,14 +103,15 @@ export function exportWorkbook(name: string, e: Entities): XlsxSheet[] {
     { name: SHEETS.reminder, header: H.reminder, widths: [38, 34, 17, 18, 18, 30, 7],
       rows: Object.values(e.reminder).sort((a, b) => a.at.localeCompare(b.at))
         .map((r) => row([r.id, r.title, r.at.replace('T', ' '), REMINDER_KIND[r.kind], subName(r.subdivisionId), e.task[r.taskId ?? '']?.name ?? '', yes(r.done)])) },
-    { name: SHEETS.order, header: H.order, widths: [38, 16, 30, 40, 22, 18, 12, 14, 14, 14, 14, 14],
+    { name: SHEETS.order, header: H.order, widths: [38, 16, 30, 40, 22, 22, 18, 12, 14, 14, 14, 14, 14],
       rows: orders.map((o) => {
         const t = orderTotals(o, expensesOf(o.id));
-        return row([o.id, o.number, o.name, o.description, o.supplier, subName(o.subdivisionId), o.date ?? '', eur(o.amount), eur(t.spent), eur(t.available), eur(t.invoiced), eur(t.notInvoiced)]);
+        return row([o.id, o.number, o.name, o.description, o.supplier, company(o.companyId), subName(o.subdivisionId), o.date ?? '', eur(o.amount), eur(t.spent), eur(t.available), eur(t.invoiced), eur(t.notInvoiced)]);
       }) },
-    { name: SHEETS.expense, header: H.expense, widths: [38, 16, 30, 40, 12, 14, 10, 16],
+    { name: SHEETS.expense, header: H.expense, widths: [38, 16, 30, 40, 12, 14, 10, 16, 10, 14],
       rows: orders.flatMap((o) => expensesOf(o.id).sort((a, b) => (a.date ?? '9').localeCompare(b.date ?? '9'))
-        .map((x) => row([x.id, o.number || o.name, x.name, x.description, x.date ?? '', eur(x.amount), yes(x.invoiced), x.invoiceNumber]))) },
+        .map((x) => row([x.id, o.number || o.name, x.name, x.description, x.date ?? '', eur(x.amount), yes(x.invoiced), x.invoiceNumber,
+          x.labor ? x.labor.shifts : '', x.labor ? eur(x.labor.rate) : '']))) },
     { name: SHEETS.plano, header: H.plano, widths: [38, 38, 18, 34, 40, 9, 8, 12, 12, 30, 30, 30, 30, 30],
       rows: docs('plano').map((d) => row([d.id, d.seriesId, subName(d.subdivisionId), d.name, d.description, d.version, yes(latest.has(d.id)), DOC_STATUS[d.status], d.date ?? '',
         ...FORMATS.map((f) => linksOf(d, f))])) },
@@ -364,6 +365,7 @@ export function importWorkbook(sheets: SheetData[], current: Entities): ImportRe
       createdAt: Date.now(), ...old, id, number: r['Nº pedido'] ?? '', name: r.Nombre ?? '', description: r['Descripción'] ?? '', supplier: r.Proveedor ?? '',
       subdivisionId: subRef(r['Subdivisión']), date: date(r.Fecha), amount: amount ?? old?.amount ?? 0,
     };
+    if (r.Subcontrata !== undefined) { const cid = companyRef(r.Subcontrata); if (cid || o.companyId) o.companyId = cid; }
     put('order', o);
   }
 

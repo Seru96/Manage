@@ -38,6 +38,19 @@ export interface Person {
 /** Empresa subcontratada. */
 export interface Company { id: string; name: string; color: string }
 
+/**
+ * Marcar o quitar un sitio de acceso. La general abarca a todos: marcarla marca todos los
+ * sitios y quitarla los quita. Quitar otro sitio quita también la general; marcar el último
+ * que faltaba la marca.
+ */
+export function toggleSiteIds(cur: string[], site: string, on: boolean, subs: Subdivision[]): string[] {
+  const general = subs.filter((s) => isGeneral(s)).map((s) => s.id);
+  if (general.includes(site)) return on ? subs.map((s) => s.id) : [];
+  if (!on) return cur.filter((s) => s !== site && !general.includes(s));
+  const next = [...new Set([...cur, site])];
+  return subs.every((s) => isGeneral(s) || next.includes(s.id)) ? [...new Set([...next, ...general])] : next;
+}
+
 /** Nombre corto a partir de las columnas: primer nombre y primer apellido. */
 export function autoName(values: Record<string, string> | undefined): string {
   const first = (s: string | undefined) => (s ?? '').trim().split(/\s+/)[0] ?? '';
@@ -114,7 +127,25 @@ export interface Order {
   amount: number;
   date: DateStr | null;
   subdivisionId: string | null;
+  /** Empresa subcontratada a la que se hizo el pedido (opcional). */
+  companyId?: string | null;
   createdAt: number;
+}
+
+/**
+ * Gasto de jornadas de una subcontrata: las que apuntó su gente en el calendario entre dos
+ * fechas (de las personas elegidas y, si se indica, de un sitio), a un precio por jornada.
+ * El importe del gasto es `rate × shifts`; `shifts` se guarda para que no cambie solo.
+ */
+export interface Labor {
+  companyId: string;
+  from: DateStr;
+  to: DateStr;
+  personIds: string[];
+  subdivisionId: string | null;
+  /** Precio de una jornada de una persona. */
+  rate: number;
+  shifts: number;
 }
 
 /** Gasto contra un pedido. */
@@ -127,6 +158,8 @@ export interface Expense {
   date: DateStr | null;
   invoiced: boolean;
   invoiceNumber: string;
+  /** Si es un gasto de jornadas de subcontrata, de dónde salen. */
+  labor?: Labor | null;
   createdAt: number;
 }
 

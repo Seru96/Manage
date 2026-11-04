@@ -4,8 +4,9 @@ import { showStart, syncCommand } from '../app/session';
 import { conflictDays } from '../core/conflicts';
 import { fmtShort } from '../core/dates';
 import { useProject, type SyncState } from '../store/project';
-import { personLabel, useConflicts, usePeople, useSubdivisions } from '../store/selectors';
-import { editTask, setFilters, useView } from '../store/view';
+import { inCompany, personLabel, useCompanies, useConflicts, usePeople, useSubdivisions } from '../store/selectors';
+import { activeFilters, clearFilters, editTask, setFilters, useView } from '../store/view';
+import { CRITICALITY, STATUS, type Criticality, type TaskStatus } from '../core/model';
 import { openOptions } from '../store/theme';
 import { Icon } from './icons';
 
@@ -28,6 +29,8 @@ export function Toolbar() {
   const conflicts = useConflicts();
   const [showConflicts, setShowConflicts] = useState(false);
   const [showExcel, setShowExcel] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const nFilters = activeFilters(filters) - (filters.subdivisionId ? 1 : 0);
   const excel = (fn: () => Promise<void>) => () => { setShowExcel(false); void fn(); };
 
   return (
@@ -51,19 +54,18 @@ export function Toolbar() {
         <input data-global-search type="search" placeholder="Buscar (⌘F)" value={filters.q}
           onChange={(e) => setFilters({ q: e.target.value })} />
       </label>
-      <select className="tb-select" value={filters.personId ?? ''} onChange={(e) => setFilters({ personId: e.target.value || null })}
-        aria-label="Filtrar por persona" title="Ver solo las tareas de una persona">
-        <option value="">Todas las personas</option>
-        {people.map((p) => <option key={p.id} value={p.id}>{personLabel(p)}</option>)}
-      </select>
       <select className="tb-select" value={filters.subdivisionId ?? ''} onChange={(e) => setFilters({ subdivisionId: e.target.value || null })}
         aria-label="Filtrar por subdivisión">
         <option value="">Todas las subdivisiones</option>
         {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>
-      <label className="tb-check" title="Ocultar las tareas hechas">
-        <input type="checkbox" checked={filters.hideDone} onChange={(e) => setFilters({ hideDone: e.target.checked })} /> Ocultar hechas
-      </label>
+      <div className="tb-pop-anchor" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowFilters(false); }}>
+        <button className={`tb-btn filters${nFilters ? ' on' : ''}`} data-action="filters" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters}
+          title="Filtrar por empresa, persona, estado o criticidad" aria-label="Filtros">
+          <Icon name="filter" size={16} />{nFilters > 0 && <span data-filter-count>{nFilters}</span>}
+        </button>
+        {showFilters && <FiltersPopover />}
+      </div>
 
       <div className="tb-pop-anchor" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowExcel(false); }}>
         <button className="tb-btn" data-action="excel" onClick={() => setShowExcel((v) => !v)} title="Exportar o importar el proyecto en Excel" aria-label="Excel" aria-expanded={showExcel}>
@@ -108,5 +110,53 @@ export function Toolbar() {
         )}
       </div>
     </header>
+  );
+}
+
+/** Los filtros que valen para todas las vistas (además de la subdivisión y la búsqueda). */
+function FiltersPopover() {
+  const filters = useView((s) => s.filters);
+  const people = usePeople();
+  const companies = useCompanies();
+  const shown = people.filter((p) => inCompany(p, filters.companyId));
+  const groups = [{ id: '', name: 'Personal propio' }, ...companies].map((c) => ({ ...c, list: shown.filter((p) => (p.companyId ?? '') === c.id) })).filter((g) => g.list.length);
+  return (
+    <div className="popover filters-pop" tabIndex={-1}>
+      <h3>Filtros</h3>
+      <label className="field">Empresa
+        <select value={filters.companyId ?? ''} aria-label="Filtrar por empresa" onChange={(e) => {
+          const companyId = e.target.value || null;
+          const p = people.find((x) => x.id === filters.personId);
+          setFilters({ companyId, ...(p && !inCompany(p, companyId) ? { personId: null } : {}) });
+        }}>
+          <option value="">Todas</option>
+          <option value="own">Personal propio</option>
+          {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </label>
+      <label className="field">Persona
+        <select value={filters.personId ?? ''} aria-label="Filtrar por persona" onChange={(e) => setFilters({ personId: e.target.value || null })}>
+          <option value="">Todas</option>
+          {groups.map((g) => <optgroup key={g.id} label={g.name}>{g.list.map((p) => <option key={p.id} value={p.id}>{personLabel(p)}</option>)}</optgroup>)}
+        </select>
+      </label>
+      <div className="field-row">
+        <label className="field">Estado
+          <select value={filters.status ?? ''} aria-label="Filtrar por estado" onChange={(e) => setFilters({ status: (e.target.value || null) as TaskStatus | null })}>
+            <option value="">Todos</option>
+            {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </label>
+        <label className="field">Criticidad
+          <select value={filters.criticality ?? ''} aria-label="Filtrar por criticidad" onChange={(e) => setFilters({ criticality: (e.target.value || null) as Criticality | null })}>
+            <option value="">Todas</option>
+            {Object.entries(CRITICALITY).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="check"><input type="checkbox" checked={filters.hideDone} onChange={(e) => setFilters({ hideDone: e.target.checked })} /> Ocultar lo hecho</label>
+      <p className="muted small">La empresa filtra también el calendario de subcontratas, el equipo y los pedidos.</p>
+      <div className="dialog-buttons"><button type="button" className="link" onClick={clearFilters} disabled={!activeFilters(filters)}>Quitar filtros</button></div>
+    </div>
   );
 }
